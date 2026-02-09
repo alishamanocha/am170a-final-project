@@ -136,7 +136,7 @@ def main():
     T = 1 # Flight time from start to destination or vice versa
     m = 1 # Drone mass
     EH = 1 # Hovering energy
-    e_max = 24 # Maximum energy the drone can use
+    e_max = 12.5 # Maximum energy the drone can use
     ts = T / 20 # Time for the drone to come to a stop midway, if necessary
     eps = 5e-2 # Threshold used to determine if the drone should return midway (if energy margin < eps)
 
@@ -258,6 +258,7 @@ def main():
     x, y = trajectory[:, 0], trajectory[:, 1]
     vx, vy = trajectory[:, 2], trajectory[:, 3]
     speed = np.hypot(vx, vy) # Speed = |v| = sqrt(vx^2 + vy^2)
+    e = trajectory[:, 4]
 
     # Plot parametric solution of x(t) vs. y(t)
     plt.figure(figsize=(7, 7))
@@ -324,6 +325,17 @@ def main():
     plt.xlabel("Time")
     plt.ylabel("Speed")
     plt.title("Speed vs time")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    # Plot energy used over time
+    plt.figure(figsize=(9, 4))
+    plt.plot(times, e, lw=2, label="e(t)")
+
+    plt.xlabel("Time")
+    plt.ylabel("Energy used")
+    plt.title("Energy used vs time")
     plt.legend()
     plt.tight_layout()
     plt.show()
