@@ -67,7 +67,7 @@ def check_stop_energy(state, ts, m, EH):
     t0 = 0.0
     tspan = np.linspace(t0, ts, 100)
 
-    sol = solve_ivp(stop_odes, (t0, ts), initial_state, args=(params,), t_eval=tspan, method="RK45")
+    sol = solve_ivp(stop_odes, (t0, ts), initial_state, args=(params,), t_eval=tspan, method="RK45", rtol=1e-8, atol=1e-10)
 
     if sol.success:
         # Return the amount of energy used to stop
@@ -91,7 +91,7 @@ def check_return_energy(state, T, m, EH, x0, y0):
     t0 = 0.0
     tspan = np.linspace(t0, T, 100)
 
-    sol = solve_ivp(forward_odes, (t0, T), initial_state, args=(params,), t_eval=tspan, method="RK45")
+    sol = solve_ivp(forward_odes, (t0, T), initial_state, args=(params,), t_eval=tspan, method="RK45", rtol=1e-8, atol=1e-10)
 
     if sol.success:
         # Return the amount of energy used to return
@@ -136,7 +136,7 @@ def main():
     T = 1 # Flight time from start to destination or vice versa
     m = 1 # Drone mass
     EH = 1 # Hovering energy
-    e_max = 25 # Maximum energy the drone can use
+    e_max = 24 # Maximum energy the drone can use
     ts = T / 20 # Time for the drone to come to a stop midway, if necessary
     eps = 5e-2 # Threshold used to determine if the drone should return midway (if energy margin < eps)
 
@@ -165,6 +165,8 @@ def main():
             args=(params,),
             method="RK45",
             max_step=dt,
+            rtol=1e-8,
+            atol=1e-10
         )
 
         if not sol_forward.success:
@@ -204,7 +206,9 @@ def main():
             turn_state,
             args=(params,),
             method="RK45",
-            max_step=ts/50
+            max_step=ts/50,
+            rtol=1e-8,
+            atol=1e-10
         )
 
         # Add all times and state arrays into trajectory tracker, offsetting the times because
@@ -233,7 +237,9 @@ def main():
         stopped_state,
         args=(params,),
         method="RK45",
-        max_step=T/200
+        max_step=T/200,
+        rtol=1e-8,
+        atol=1e-10
     )
 
     print("ending state:", sol_return.y[:, -1])
