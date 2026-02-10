@@ -103,7 +103,7 @@ def check_return_energy(state, T, m, EH, x0, y0):
 fixed amount of time and then return from that point back to the starting point. The energy margin
 that would be left after performing this return is compared to a given epsilon, below which the drone
 should turn back. Returns the difference between the margin and epsilon."""
-def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0):
+def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn):
     # Get the amount of energy used thus far
     e_used = state[4]
     # Compute the amount of energy the drone has left
@@ -117,8 +117,11 @@ def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0):
     return_state = check_return_energy(stopped_state, T, m, EH, x0, y0)
     e_return = return_state[4]
 
+    turn_energy = e_stop + e_return
+    e_turn.append(turn_energy)
+
     # Compute energy margin after performing the return
-    margin = e_left - (e_stop + e_return)
+    margin = e_left - (turn_energy)
     
     print(
         f"t={t:.3f}, "
@@ -129,6 +132,19 @@ def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0):
     )
 
     return margin - eps
+
+def expected_return_energy(times, EH, ts, T, m, x0, y0, xT, yT):
+    # Predicted velocity
+    vx = ((6 * times * (T - times)) / (T**3)) * (xT - x0)
+    vy = ((6 * times * (T - times)) / (T**3)) * (yT - y0)
+
+    # Predicted trajectory
+    x = x0 + ((3 * (times**2) / (T**2)) - (2 * (times**3) / (T**3))) * (xT - x0)
+    y = y0 + ((3 * (times**2) / (T**2)) - (2 * (times**3) / (T**3))) * (yT - y0)
+
+    expected_e_turn = EH * (T + ts) + (m * (vx**2 + vy**2) / 2) + ((9 * m) / (4 * T**2)) * ((x0 - x - ((vx * ts) / 2))**2 + (y0 - y - ((vy * ts) / 2))**2)
+
+    return expected_e_turn
 
 def main():
     (x0, y0) = (0, 0) # Starting point
@@ -150,6 +166,8 @@ def main():
     # Keep track of drone's full trajectory over time
     times = [t]
     trajectory = [state.copy()]
+    e_turn = []
+    e_turn_times = np.array([])
 
     # Keep track of if drone turned, and if so, which index in trajectory represents that point in time
     turned = False
@@ -182,7 +200,8 @@ def main():
         t = sol_forward.t[-1]
 
         # Get difference between energy margin that would remain after returning and epsilon
-        turn = check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0)
+        turn = check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn)
+        e_turn_times = np.append(e_turn_times, t)
         # If negative or zero, margin is less than or equal to epsilon, so need to return
         if turn <= 0:
             print("Turning around just before there is insufficient energy to return")
@@ -254,11 +273,13 @@ def main():
     # Convert the full trajectory and times of the whole journey to a numpy array and get each state component
     trajectory = np.array(trajectory)
     times = np.array(times)
+    e_turn = np.array(e_turn)
 
     x, y = trajectory[:, 0], trajectory[:, 1]
     vx, vy = trajectory[:, 2], trajectory[:, 3]
     speed = np.hypot(vx, vy) # Speed = |v| = sqrt(vx^2 + vy^2)
     e = trajectory[:, 4]
+    expected_e_turn = expected_return_energy(e_turn_times, EH, ts, T, m, x0, y0, xT, yT)
 
     # Plot parametric solution of x(t) vs. y(t)
     plt.figure(figsize=(7, 7))
@@ -336,6 +357,18 @@ def main():
     plt.xlabel("Time")
     plt.ylabel("Energy used")
     plt.title("Energy used vs time")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    # Plot expected energy to return over time
+    plt.figure(figsize=(9, 4))
+    plt.plot(e_turn_times, e_turn, lw=2, label="Actual e_{turn}(t)")
+    plt.plot(e_turn_times, expected_e_turn, "--", lw=2, label="Expected e_turn(t)")
+
+    plt.xlabel("Time")
+    plt.ylabel("Energy to return")
+    plt.title("Energy to return vs time")
     plt.legend()
     plt.tight_layout()
     plt.show()
