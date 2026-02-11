@@ -304,3 +304,35 @@ def plot_energy_to_return(e_turn_times, e_turn_tracker, expected_e_turn, e_used_
     plt.savefig(savepath)
     plt.close()
 
+
+def plot_energy_error_tolerance(e_turn_times, e_turn_tracker, expected_e_turn, savepath="energy_error_tolerance.png"):
+    """
+    Plot the error energy needed to return within the scale of an acceptable error range
+        
+    Args:
+        e_turn_times (numpy.ndarray): The time values when the drone turns around.
+        e_turn_tracker (numpy.ndarray): The energy used by the drone when turning around.
+        expected_e_turn (numpy.ndarray): The expected energy used by the drone when turning around.
+        e_used_tracker (numpy.ndarray): The energy used by the drone over time.
+        savepath (str): The path to save the plot.
+
+    Returns:
+        None
+    """
+    tau1 = 1e-6
+    tau2 = 1e-5
+    error = np.abs(e_turn_tracker - expected_e_turn)
+    scale = 1e6
+
+    plt.figure(figsize=(9, 4), dpi=300)
+    plt.plot(e_turn_times, error * scale, lw=2, label=r"$|e_{\mathrm{actual}}(t) - e_{\mathrm{expected}}(t)|$")
+    plt.axhline(y=tau1 * scale, color="red",  linestyle="--", lw=2, label=rf"$\tau = {tau1:g}$")
+    plt.axhline(y=tau2 * scale, linestyle="--", lw=2, label=rf"$\tau = {tau2:g}$")
+    plt.fill_between(e_turn_times, 0, tau2 * scale, alpha=0.2, label="Acceptable Error")
+    plt.xlabel("Time")
+    plt.ylabel("Error Range $\t *(10^{-6})$ ")
+    plt.title("Error Calculated Within Energy to Return Over Time")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(savepath)
+    plt.close()

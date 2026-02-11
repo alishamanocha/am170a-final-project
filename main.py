@@ -29,6 +29,7 @@ from plotting import (
     plot_energy_used_vs_time,
     plot_position_and_speed_vs_time,
     plot_trajectory_parametric,
+    plot_energy_error_tolerance,
 )
 
 
@@ -197,6 +198,10 @@ def main():
     plot_energy_to_return(
         e_turn_times, e_turn_tracker + EPS, expected_e_turn + EPS, E_MAX - e_used_tracker, E_MAX,
         savepath=str(PLOTS_DIR / "energy_to_return.png"),
+    )
+    plot_energy_error_tolerance(
+        e_turn_times, e_turn_tracker + EPS, expected_e_turn + EPS,
+        savepath=str(PLOTS_DIR / "energy_error_tolerance.png"),
     )
 
     # ---- Summary ----
