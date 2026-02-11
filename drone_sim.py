@@ -125,9 +125,10 @@ def check_return_energy(state, T, m, EH, x0, y0):
 fixed amount of time and then return from that point back to the starting point. The energy margin
 that would be left after performing this return is compared to a given epsilon, below which the drone
 should turn back. Returns the difference between the margin and epsilon."""
-def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn):
+def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_used_tracker):
     # Get the amount of energy used thus far
     e_used = state[4]
+
     # Compute the amount of energy the drone has left
     e_left = e_max - e_used
 
@@ -139,11 +140,14 @@ def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn):
     return_state = check_return_energy(stopped_state, T, m, EH, x0, y0)
     e_return = return_state[4]
 
-    turn_energy = e_stop + e_return
-    e_turn.append(turn_energy)
+    e_turn = e_stop + e_return
+
+    # Add energy used and to return to trackers for later plotting
+    e_used_tracker.append(e_used)
+    e_turn_tracker.append(e_turn)
 
     # Compute energy margin after performing the return
-    margin = e_left - (turn_energy)
+    margin = e_left - e_turn
     
     print(
         f"t={t:.3f}, "

@@ -276,22 +276,26 @@ def plot_energy_used_vs_time(
     plt.close()
 
 
-def plot_energy_to_return(e_turn_times, e_turn, expected_e_turn, savepath="energy_to_return.png"):
+def plot_energy_to_return(e_turn_times, e_turn_tracker, expected_e_turn, e_used_tracker, e_max, savepath="energy_to_return.png"):
     """
     Plot expected energy to return over time.
 
     Args:
         e_turn_times (numpy.ndarray): The time values when the drone turns around.
-        e_turn (numpy.ndarray): The energy used by the drone when turning around.
+        e_turn_tracker (numpy.ndarray): The energy used by the drone when turning around.
         expected_e_turn (numpy.ndarray): The expected energy used by the drone when turning around.
+        e_used_tracker (numpy.ndarray): The energy used by the drone over time.
         savepath (str): The path to save the plot.
 
     Returns:
         None
     """
     plt.figure(figsize=(9, 4), dpi=300)
-    plt.plot(e_turn_times, e_turn, lw=2, label="Actual e_{turn}(t)")
-    plt.plot(e_turn_times, expected_e_turn, "--", lw=2, label="Expected e_turn(t)")
+    plt.plot(e_turn_times, e_turn_tracker, lw=2, label="Actual e_{turn}(t) + epsilon")
+    plt.plot(e_turn_times, expected_e_turn, "--", lw=2, label="Expected e_turn(t) + epsilon")
+    plt.plot(e_turn_times, e_used_tracker, lw=2, label="Available energy e_max(t) - e_used(t)")
+    plt.axhline(y=e_max, color="red", linestyle="--", lw=2, label=f"Max energy ({e_max})")
+
     plt.xlabel("Time")
     plt.ylabel("Energy to return")
     plt.title("Energy to return vs time")

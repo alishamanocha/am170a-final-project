@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 from scipy.integrate import solve_ivp
 
-from modified_drone_sim import (
+from drone_sim import (
     check_turn,
     expected_return_energy,
     forward_odes,
@@ -60,7 +60,8 @@ def run_forward_phase(params, state, e_max, eps, ts):
     t = 0.0
     times = [t]
     trajectory = [state.copy()]
-    e_turn = []
+    e_used_tracker = []
+    e_turn_tracker = []
     e_turn_times = np.array([])
     turned = False
     turn_index = None
@@ -87,7 +88,7 @@ def run_forward_phase(params, state, e_max, eps, ts):
         t = sol.t[-1]
 
         margin_minus_eps = check_turn(
-            t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn
+            t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_used_tracker
         )
         e_turn_times = np.append(e_turn_times, t)
         if margin_minus_eps <= 0:
@@ -96,7 +97,7 @@ def run_forward_phase(params, state, e_max, eps, ts):
             turn_index = len(trajectory) - 1
             break
 
-    return times, trajectory, e_turn, e_turn_times, turned, turn_index
+    return times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index
 
 
 def run_stop_phase(turn_state, ts, m, EH):
@@ -134,7 +135,7 @@ def main():
     state = [X0, Y0, 0.0, 0.0, 0.0]
 
     # ---- Forward phase ----
-    times, trajectory, e_turn, e_turn_times, turned, turn_index = run_forward_phase(
+    times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index = run_forward_phase(
         params, state, E_MAX, EPS, TS
     )
 
@@ -165,7 +166,8 @@ def main():
     # ---- Convert to arrays and derive quantities ----
     trajectory = np.array(trajectory)
     times = np.array(times)
-    e_turn = np.array(e_turn)
+    e_used_tracker = np.array(e_used_tracker)
+    e_turn_tracker = np.array(e_turn_tracker)
     expected_e_turn = expected_return_energy(e_turn_times, EH, TS, T, M, X0, Y0, XT, YT)
 
     x = trajectory[:, 0]
@@ -193,7 +195,7 @@ def main():
         savepath=str(PLOTS_DIR / "energy_used_vs_time.png"),
     )
     plot_energy_to_return(
-        e_turn_times, e_turn, expected_e_turn,
+        e_turn_times, e_turn_tracker + EPS, expected_e_turn + EPS, E_MAX - e_used_tracker, E_MAX,
         savepath=str(PLOTS_DIR / "energy_to_return.png"),
     )
 
