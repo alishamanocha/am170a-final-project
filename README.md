@@ -8,4 +8,4 @@ The drone operates under a continuous feasibility constraint: it must always pos
 ## Contributions:
     - Main Driver Function/ IVP solver: Alisha
     - Readability/Documentation: Kamran
-    - Graphs: Kamran, Alisha, Aydin
+    - Graphs: Kamran, Alisha, Aydin, Reagan
