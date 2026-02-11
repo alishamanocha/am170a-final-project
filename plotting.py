@@ -17,7 +17,7 @@ def plot_trajectory_parametric(
     x, y, x0, y0, xT, yT, turn_index, stopped_index, turned, savepath="parametric_trajectory.png"
 ):
     """
-    Plot parametric solution of x(t) vs. y(t).
+    Plot parametric solution of x(t) vs. y(t) split into forward and return phases.
 
     Args:
         x (numpy.ndarray): The x-coordinates of the drone trajectory.
@@ -34,52 +34,70 @@ def plot_trajectory_parametric(
     Returns:
         None
     """
-    plt.figure(figsize=(7, 7), dpi=300)
 
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), dpi=300)
+
+    # Left subplot (forward journey)
     if turned:
-        plt.plot(x[: turn_index + 1], y[: turn_index + 1], lw=2.5, label="Forward")
-        plt.plot(
-            x[turn_index : stopped_index + 1],
-            y[turn_index : stopped_index + 1],
-            ":",
-            lw=2,
-            label="Stopping",
-        )
+        ax1.plot(x[: turn_index + 1],y[: turn_index + 1],lw=2.5, label="Forward", color="tab:blue")
+        ax1.plot(x[turn_index : stopped_index + 1],y[turn_index : stopped_index + 1],":",lw=2,label="Stopping", color="tab:orange")
+        ax1.scatter(x[turn_index],y[turn_index],c="orange",s=100,marker="x",label="Turn decision",zorder=5,)
+        ax1.scatter(x[stopped_index],y[stopped_index],c="purple",s=100,marker="s",label="Stopped",zorder=5,)
     else:
-        plt.plot(x, y, lw=2.5, label="Forward")
+        ax1.plot(x[: stopped_index + 1], y[: stopped_index + 1], lw=2.5, label="Forward")
 
-    plt.plot(x[stopped_index:], y[stopped_index:], "--", lw=2.5, label="Return")
+    ax1.scatter(x0, y0, c="green", s=80, label="Start", zorder=5)
+    ax1.scatter(xT, yT, c="red", s=80, label="Target", zorder=5)
 
-    plt.scatter(x0, y0, c="green", s=80, label="Start")
-    plt.scatter(xT, yT, c="red", s=80, label="Target")
-    plt.scatter(x[-1], y[-1], c="black", s=120, marker="*", label="Final")
+    ax1.set_xlabel("x")
+    ax1.set_ylabel("y")
+    ax1.set_title("Forward Journey")
+    ax1.legend(loc="best")
+    ax1.grid(True, alpha=0.3)
+    ax1.set_aspect('equal', adjustable='datalim')
 
-    if turned:
-        plt.scatter(
-            x[turn_index],
-            y[turn_index],
-            c="orange",
-            s=100,
-            marker="x",
-            label="Turn decision",
-        )
-        plt.scatter(
-            x[stopped_index],
-            y[stopped_index],
-            c="purple",
-            s=100,
-            marker="s",
-            label="Stopped",
-        )
+    # Padding around forward trajectory (include the target inside of the bounds)
+    x_forward = x[: stopped_index + 1]
+    y_forward = y[: stopped_index + 1]
+    x_min = min(np.min(x_forward), xT)
+    x_max = max(np.max(x_forward), xT)
+    y_min = min(np.min(y_forward), yT)
+    y_max = max(np.max(y_forward), yT)
+    x_range = x_max - x_min
+    y_range = y_max - y_min
+    margin = 0.1 * max(x_range, y_range, 0.5)
+    ax1.set_xlim(x_min - margin, x_max + margin)
+    ax1.set_ylim(y_min - margin, y_max + margin)
 
-    plt.axis("equal")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.title("Drone trajectory (parametric)")
-    plt.legend()
+    # Right subplot (return path)
+    ax2.plot(x[stopped_index:], y[stopped_index:], "--", lw=2.5, label="Return", color="tab:green")
+    ax2.scatter(x[stopped_index],y[stopped_index],c="purple",s=100,marker="s",label="Stopped",zorder=5,)
+    ax2.scatter(x0, y0, c="green", s=80, label="Start", zorder=5)
+
+    ax2.set_xlabel("x")
+    ax2.set_ylabel("y")
+    ax2.set_title("Return Journey")
+    ax2.legend(loc="best")
+    ax2.grid(True, alpha=0.3)
+    ax2.set_aspect('equal', adjustable='datalim')
+    
+    # Padding around return trajectory
+    x_return = x[stopped_index:]
+    y_return = y[stopped_index:]
+    x_min = np.min(x_return)
+    x_max = np.max(x_return)
+    y_min = np.min(y_return)
+    y_max = np.max(y_return)
+    x_range = x_max - x_min
+    y_range = y_max - y_min
+    margin = 0.1 * max(x_range, y_range, 0.5)
+    ax2.set_xlim(x_min - margin, x_max + margin)
+    ax2.set_ylim(y_min - margin, y_max + margin)
+
     plt.tight_layout()
     plt.savefig(savepath)
     plt.close()
+
 
 
 def plot_position_vs_time(times, x, y, turn_index, stopped_index, turned, savepath="position_vs_time.png"):
