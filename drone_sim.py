@@ -1,14 +1,11 @@
 """
 Drone Simulation Model
 
-Author: Alisha Manocha
-Created: 2026-02-08
-Class: AM 170A Applied Math Capstone
+A script to simulate the flight of a drone from a starting point to an ending point and returning back to the
+starting point. It takes into account the energy used by the drone during the flight and provides a simulation
+to check available energy and come to a stop if needed.
 
-Last Updated: 2026-02-10; Kamran Hussain
-
-Description: A simple script to simulate the flight of a drone from a starting point to an ending point 
-and returning back to the starting point. It takes into account the energy used by the drone during the flight.
+Author: Alisha Manocha, Reagan Ross, Aydin Khan, Roberto Julian Campos, Kamran Hussain
 """
 
 import numpy as np
@@ -159,6 +156,7 @@ def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_use
 
     return margin - eps
 
+"""Compute the expected return energy using the analytical solution at all timestamps."""
 def expected_return_energy(times, EH, ts, T, m, x0, y0, xT, yT):
     # Predicted velocity
     vx = ((6 * times * (T - times)) / (T**3)) * (xT - x0)
@@ -168,6 +166,7 @@ def expected_return_energy(times, EH, ts, T, m, x0, y0, xT, yT):
     x = x0 + ((3 * (times**2) / (T**2)) - (2 * (times**3) / (T**3))) * (xT - x0)
     y = y0 + ((3 * (times**2) / (T**2)) - (2 * (times**3) / (T**3))) * (yT - y0)
 
+    # Predicted stop and return energy
     expected_e_turn = EH * (T + ts) + (m * (vx**2 + vy**2) / 2) + ((9 * m) / (4 * T**2)) * ((x0 - x - ((vx * ts) / 2))**2 + (y0 - y - ((vy * ts) / 2))**2)
 
     return expected_e_turn

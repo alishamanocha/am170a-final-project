@@ -6,10 +6,7 @@ and back, with optional midway turn-around when energy margin is insufficient.
 Uses ODE integration for forward flight, stopping, and return; then generates
 all trajectory and energy plots via the plotting module.
 
-Author: Alisha Manocha
-Created: 2026-02-08
-Class: AM 170A Applied Math Capstone
-Last Updated: 2026-02-10; Kamran Hussain
+Author: Alisha Manocha, Reagan Ross, Aydin Khan, Roberto Julian Campos, Kamran Hussain
 """
 
 from pathlib import Path
@@ -49,8 +46,8 @@ M = 1.0  # Drone mass
 EH = 1.0  # Hovering energy
 E_MAX = 12.5  # Max energy budget
 TS = T / 20  # Time to come to stop when turning midway
-EPS = 5e-2  # Turn when energy margin < EPS
-DT = T / 1000  # Integration check interval
+EPS = 5e-2  # Threshold used to determine if the drone should return midway (if energy margin < eps)
+DT = T / 1000  # Time interval at which to check if drone should return
 
 
 def run_forward_phase(params, state, e_max, eps, ts):
@@ -59,16 +56,23 @@ def run_forward_phase(params, state, e_max, eps, ts):
     Returns (times, trajectory, e_turn, e_turn_times, turned, turn_index).
     """
     t = 0.0
+
+    # Keep track of drone's full trajectory over time
     times = [t]
     trajectory = [state.copy()]
+
+    # Track energy used and energy to return over time
     e_used_tracker = []
     e_turn_tracker = []
     e_turn_times = np.array([])
+
+    # Keep track of if drone turned, and if so, which index in trajectory represents that point in time
     turned = False
     turn_index = None
     x0, y0, xT, yT, T, m, _ = params
 
     while t < T:
+        # Solve system of ODEs over a small time span with the current state and parameters
         sol = solve_ivp(
             forward_odes,
             (t, t + DT),
@@ -82,16 +86,22 @@ def run_forward_phase(params, state, e_max, eps, ts):
         if not sol.success:
             raise RuntimeError("Forward flight integration failed")
 
+        # Add all times and state arrays into trajectory tracker
         for i in range(1, sol.y.shape[1]):
             trajectory.append(sol.y[:, i])
             times.append(sol.t[i])
+
+        # Update current state and time
         state = sol.y[:, -1]
         t = sol.t[-1]
 
+        # Get difference between energy margin that would remain after returning and epsilon
         margin_minus_eps = check_turn(
             t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_used_tracker
         )
         e_turn_times = np.append(e_turn_times, t)
+
+        # If negative or zero, margin is less than or equal to epsilon, so need to return
         if margin_minus_eps <= 0:
             print("Turning around just before there is insufficient energy to return")
             turned = True
@@ -103,7 +113,10 @@ def run_forward_phase(params, state, e_max, eps, ts):
 
 def run_stop_phase(turn_state, ts, m, EH):
     """Integrate from turn_state to full stop over time ts. Returns solution."""
+    # Pass in velocity at the time of starting to stop, amount of time to stop, mass, hovering
+    # energy as parameters
     params_stop = [turn_state[2], turn_state[3], ts, m, EH]
+    # Come to a stop
     return solve_ivp(
         stop_odes,
         (0, ts),
@@ -118,7 +131,10 @@ def run_stop_phase(turn_state, ts, m, EH):
 
 def run_return_phase(stopped_state, x0, y0, T, m, EH):
     """Integrate return from stopped state to (x0, y0). Returns solution."""
+    # Pass in stopped position as initial position, initial starting point as ending position, flight
+    # time, mass, and hovering energy as parameters
     params_return = [stopped_state[0], stopped_state[1], x0, y0, T, m, EH]
+    # Return to initial point
     return solve_ivp(
         forward_odes,
         (0, T),
@@ -142,8 +158,12 @@ def main():
 
     # ---- Optional stop phase (if we turned midway) ----
     if turned:
+        # Get the state at the point of deciding to return
         turn_state = trajectory[turn_index]
         sol_stop = run_stop_phase(turn_state, TS, M, EH)
+
+        # Add all times and state arrays into trajectory tracker, offsetting the times because
+        # we simulated from time 0 rather than the actual current time
         t_offset = times[-1]
         for i in range(1, sol_stop.y.shape[1]):
             trajectory.append(sol_stop.y[:, i])
@@ -159,12 +179,14 @@ def main():
     sol_return = run_return_phase(stopped_state, X0, Y0, T, M, EH)
     print("Ending state:", sol_return.y[:, -1])
 
+    # Add all times and state arrays into trajectory tracker, offsetting the times because we
+    # simulated from time 0 rather than the actual current time
     t_offset = times[-1]
     for i in range(1, sol_return.y.shape[1]):
         trajectory.append(sol_return.y[:, i])
         times.append(t_offset + sol_return.t[i])
 
-    # ---- Convert to arrays and derive quantities ----
+    # ---- Convert to numpy arrays and derive quantities ----
     trajectory = np.array(trajectory)
     times = np.array(times)
     e_used_tracker = np.array(e_used_tracker)
@@ -173,7 +195,7 @@ def main():
 
     x = trajectory[:, 0]
     y = trajectory[:, 1]
-    speed = np.hypot(trajectory[:, 2], trajectory[:, 3])
+    speed = np.hypot(trajectory[:, 2], trajectory[:, 3]) # Speed = |v| = sqrt(vx^2 + vy^2)
     e = trajectory[:, 4]
 
     # ---- Plotting ----

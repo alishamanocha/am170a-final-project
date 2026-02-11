@@ -1,12 +1,9 @@
 """
 Plotting Functions
 
-Author: Alisha Manocha
-Created: 2026-02-08
-Class: AM 170A Applied Math Capstone
-Last Updated: 2026-02-10; Kamran Hussain
+Script that visualizes the drone simulation results and produces the figures linked in the report.
 
-Description: Script that visualizes the drone simulation results and produces the figures linked in the report.
+Author: Alisha Manocha, Reagan Ross, Aydin Khan, Roberto Julian Campos, Kamran Hussain
 """
 
 import matplotlib.pyplot as plt
@@ -285,6 +282,7 @@ def plot_energy_to_return(e_turn_times, e_turn_tracker, expected_e_turn, e_used_
         e_turn_tracker (numpy.ndarray): The energy used by the drone when turning around.
         expected_e_turn (numpy.ndarray): The expected energy used by the drone when turning around.
         e_used_tracker (numpy.ndarray): The energy used by the drone over time.
+        e_max (float): Maximum energy budget (horizontal line and fill ceiling).
         savepath (str): The path to save the plot.
 
     Returns:
@@ -313,7 +311,6 @@ def plot_energy_error_tolerance(e_turn_times, e_turn_tracker, expected_e_turn, s
         e_turn_times (numpy.ndarray): The time values when the drone turns around.
         e_turn_tracker (numpy.ndarray): The energy used by the drone when turning around.
         expected_e_turn (numpy.ndarray): The expected energy used by the drone when turning around.
-        e_used_tracker (numpy.ndarray): The energy used by the drone over time.
         savepath (str): The path to save the plot.
 
     Returns:
