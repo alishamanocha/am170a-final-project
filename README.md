@@ -33,7 +33,7 @@
 - **position_and_speed_vs_time.png** — Position (x, y) and speed vs time (shared axis).
 - **energy_used_vs_time.png** — Energy used, max energy line, remaining (shaded), turn/stopped lines.
 - **energy_to_return.png** — Actual vs expected energy to return.
-- **energy_error_tolerance.png** — Prediction error vs time with ±ε tolerance band.
+- **energy_error_tolerance.png** — Prediction error vs time with tau tolerance band.
 
 ---
 
