@@ -51,7 +51,7 @@ def plot_trajectory_parametric(
     ax1.set_title("Forward Journey")
     ax1.legend(loc="best")
     ax1.grid(True, alpha=0.3)
-    ax1.set_aspect('equal', adjustable='datalim')
+    ax1.set_aspect('equal', adjustable='box')
 
     # Padding around forward trajectory (include the target inside of the bounds)
     x_forward = x[: stopped_index + 1]
@@ -76,7 +76,7 @@ def plot_trajectory_parametric(
     ax2.set_title("Return Journey")
     ax2.legend(loc="best")
     ax2.grid(True, alpha=0.3)
-    ax2.set_aspect('equal', adjustable='datalim')
+    ax2.set_aspect('equal', adjustable='box')
     
     # Padding around return trajectory
     x_return = x[stopped_index:]
