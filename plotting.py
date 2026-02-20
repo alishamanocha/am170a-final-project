@@ -7,11 +7,12 @@ Author: Alisha Manocha, Reagan Ross, Aydin Khan, Roberto Julian Campos, Kamran H
 """
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 
 
 def plot_trajectory_parametric(
-    x, y, x0, y0, xT, yT, turn_index, stopped_index, turned, savepath="parametric_trajectory.png"
+    x, y, x0, y0, xT, yT, xL, yL, r, turn_index, stopped_index, turned, located, savepath="parametric_trajectory.png"
 ):
     """
     Plot parametric solution of x(t) vs. y(t) split into forward and return phases.
@@ -40,11 +41,15 @@ def plot_trajectory_parametric(
         ax1.plot(x[turn_index : stopped_index + 1],y[turn_index : stopped_index + 1],":",lw=2,label="Stopping", color="tab:orange")
         ax1.scatter(x[turn_index],y[turn_index],c="orange",s=100,marker="x",label="Turn decision",zorder=5,)
         ax1.scatter(x[stopped_index],y[stopped_index],c="purple",s=100,marker="s",label="Stopped",zorder=5,)
+        if located:
+            circle = patches.Circle((x[turn_index], y[turn_index]), r, edgecolor='r', facecolor='none', linewidth=2)
+            ax1.add_patch(circle)
     else:
         ax1.plot(x[: stopped_index + 1], y[: stopped_index + 1], lw=2.5, label="Forward")
 
     ax1.scatter(x0, y0, c="green", s=80, label="Start", zorder=5)
     ax1.scatter(xT, yT, c="red", s=80, label="Target", zorder=5)
+    ax1.scatter(xL, yL, c="orange", s=80, label="Location", zorder=5)
 
     ax1.set_xlabel("x")
     ax1.set_ylabel("y")

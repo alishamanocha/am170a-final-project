@@ -122,7 +122,7 @@ def check_return_energy(state, T, m, EH, x0, y0):
 fixed amount of time and then return from that point back to the starting point. The energy margin
 that would be left after performing this return is compared to a given epsilon, below which the drone
 should turn back. Returns the difference between the margin and epsilon."""
-def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_used_tracker):
+def check_energy_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_used_tracker):
     # Get the amount of energy used thus far
     e_used = state[4]
 
@@ -155,6 +155,14 @@ def check_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_use
     )
 
     return margin - eps
+
+def get_location_distance(state, xL, yL):
+    # Get the current position
+    x = state[0]
+    y = state[1]
+
+    # Get distance from the location of the desired person/thing to find
+    return np.hypot(xL - x, yL - y)
 
 """Compute the expected return energy using the analytical solution at all timestamps."""
 def expected_return_energy(times, EH, ts, T, m, x0, y0, xT, yT):

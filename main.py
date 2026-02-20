@@ -15,9 +15,10 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 from drone_sim import (
-    check_turn,
+    check_energy_turn,
     expected_return_energy,
     forward_odes,
+    get_location_distance,
     stop_odes,
 )
 
@@ -41,10 +42,12 @@ PLOTS_DIR = SCRIPT_DIR / "plots"
 # -----------------------------------------------------------------------------
 X0, Y0 = 0.0, 0.0  # Start
 XT, YT = 1.0, 2.0  # Target
+XL, YL = 0.8, 1.0 # Location of the desired person/thing to find
+R = 0.5 # Radius of the "scanner"
 T = 1.0  # Flight time (start ↔ target)
 M = 1.0  # Drone mass
 EH = 1.0  # Hovering energy
-E_MAX = 12.5  # Max energy budget
+E_MAX = 35  # Max energy budget
 TS = T / 20  # Time to come to stop when turning midway
 EPS = 5e-2  # Threshold used to determine if the drone should return midway (if energy margin < eps)
 DT = T / 1000  # Time interval at which to check if drone should return
@@ -69,7 +72,8 @@ def run_forward_phase(params, state, e_max, eps, ts):
     # Keep track of if drone turned, and if so, which index in trajectory represents that point in time
     turned = False
     turn_index = None
-    x0, y0, xT, yT, T, m, _ = params
+    located = False
+    x0, y0, xT, yT, xL, yL, r, T, m, EH = params
 
     while t < T:
         # Solve system of ODEs over a small time span with the current state and parameters
@@ -77,7 +81,7 @@ def run_forward_phase(params, state, e_max, eps, ts):
             forward_odes,
             (t, t + DT),
             state,
-            args=(params,),
+            args=([x0, y0, xT, yT, T, m, EH],),
             method="RK45",
             max_step=DT,
             rtol=1e-8,
@@ -95,8 +99,16 @@ def run_forward_phase(params, state, e_max, eps, ts):
         state = sol.y[:, -1]
         t = sol.t[-1]
 
+        dist = get_location_distance(state, xL, yL)
+        if dist < r:
+            print("Found location! Turning back!")
+            located = True
+            turned = True
+            turn_index = len(trajectory) - 1
+            break
+
         # Get difference between energy margin that would remain after returning and epsilon
-        margin_minus_eps = check_turn(
+        margin_minus_eps = check_energy_turn(
             t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_used_tracker
         )
         e_turn_times = np.append(e_turn_times, t)
@@ -108,7 +120,7 @@ def run_forward_phase(params, state, e_max, eps, ts):
             turn_index = len(trajectory) - 1
             break
 
-    return times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index
+    return times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index, located
 
 
 def run_stop_phase(turn_state, ts, m, EH):
@@ -148,11 +160,11 @@ def run_return_phase(stopped_state, x0, y0, T, m, EH):
 
 
 def main():
-    params = [X0, Y0, XT, YT, T, M, EH]
+    params = [X0, Y0, XT, YT, XL, YL, R, T, M, EH]
     state = [X0, Y0, 0.0, 0.0, 0.0]
 
     # ---- Forward phase ----
-    times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index = run_forward_phase(
+    times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index, located = run_forward_phase(
         params, state, E_MAX, EPS, TS
     )
 
@@ -201,7 +213,7 @@ def main():
     # ---- Plotting ----
     PLOTS_DIR.mkdir(parents=True, exist_ok=True)
     plot_trajectory_parametric(
-        x, y, X0, Y0, XT, YT, turn_index, stopped_index, turned,
+        x, y, X0, Y0, XT, YT, XL, YL, R, turn_index, stopped_index, turned, located,
         savepath=str(PLOTS_DIR / "parametric_trajectory.png"),
     )
     plot_position_and_speed_vs_time(
