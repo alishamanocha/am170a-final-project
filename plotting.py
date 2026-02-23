@@ -9,6 +9,137 @@ Author: Alisha Manocha, Reagan Ross, Aydin Khan, Roberto Julian Campos, Kamran H
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
+from typing import Optional
+
+
+def plot_linear_search_area(
+    *,
+    all_centers_xy: np.ndarray,
+    searched_centers_xy: np.ndarray,
+    scan_radius: float,
+    base_xy: tuple[float, float],
+    vector_end_xy: tuple[float, float],
+    target_xy: tuple[float, float],
+    found: bool,
+    sortie_paths: list[np.ndarray],
+    recharge_count: int,
+    max_one_search_distance: Optional[float] = None,
+    savepath: str = "linear_search_area.png",
+):
+    """
+    Visualize the searched area (union of scan circles) for the linear search algorithm.
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(9, 7), dpi=300)
+
+    # Light path traces (sorties).
+    for i, path in enumerate(sortie_paths):
+        ax.plot(
+            path[:, 0],
+            path[:, 1],
+            color="0.65",
+            lw=1.2,
+            alpha=0.7,
+            label="Flight path" if i == 0 else None,
+            zorder=1,
+        )
+
+    # Scan circles (searched).
+    for i, c in enumerate(searched_centers_xy):
+        circ = patches.Circle(
+            (float(c[0]), float(c[1])),
+            float(scan_radius),
+            facecolor="tab:blue",
+            edgecolor="tab:blue",
+            alpha=0.14,
+            lw=1.0,
+            zorder=2,
+            label="Searched area" if i == 0 else None,
+        )
+        ax.add_patch(circ)
+
+    # Circle outlines for visual crispness.
+    for c in searched_centers_xy:
+        circ = patches.Circle(
+            (float(c[0]), float(c[1])),
+            float(scan_radius),
+            facecolor="none",
+            edgecolor="tab:blue",
+            alpha=0.55,
+            lw=1.1,
+            zorder=3,
+        )
+        ax.add_patch(circ)
+
+    # Centers along the vector (all, faint).
+    ax.plot(
+        all_centers_xy[:, 0],
+        all_centers_xy[:, 1],
+        ".-",
+        color="0.75",
+        lw=1.2,
+        ms=4,
+        zorder=0,
+        label="Vector array",
+    )
+
+    # Base and end markers.
+    ax.scatter([base_xy[0]], [base_xy[1]], s=90, c="green", marker="*", zorder=5, label="Base")
+    ax.scatter(
+        [vector_end_xy[0]],
+        [vector_end_xy[1]],
+        s=70,
+        c="black",
+        marker="x",
+        zorder=5,
+        label="Vector end",
+    )
+
+    # Target marker.
+    ax.scatter(
+        [target_xy[0]],
+        [target_xy[1]],
+        s=65,
+        c=("tab:green" if found else "tab:red"),
+        marker="o",
+        zorder=6,
+        label=("Target (found)" if found else "Target (not found)"),
+    )
+
+    # Optional annotation for max one-search distance along the vector.
+    if max_one_search_distance is not None and max_one_search_distance > 0:
+        base = np.array(base_xy, dtype=float)
+        end = np.array(vector_end_xy, dtype=float)
+        d = np.hypot(*(end - base))
+        if d > 0:
+            u = (end - base) / d
+            p = base + float(max_one_search_distance) * u
+            ax.scatter([p[0]], [p[1]], s=55, c="tab:orange", marker="D", zorder=6, label="Max 1-search distance")
+
+    title = "Linear search: tangential scan circles"
+    subtitle = f"searches={len(searched_centers_xy)}, recharges={recharge_count}, found={found}"
+    ax.set_title(f"{title}\n{subtitle}")
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.grid(True, alpha=0.25)
+    ax.set_aspect("equal", adjustable="box")
+
+    # Bounds with margin.
+    pts = [all_centers_xy]
+    if len(searched_centers_xy) > 0:
+        pts.append(searched_centers_xy)
+    pts.append(np.array([[base_xy[0], base_xy[1]], [vector_end_xy[0], vector_end_xy[1]], [target_xy[0], target_xy[1]]]))
+    all_pts = np.vstack(pts)
+    x_min, y_min = np.min(all_pts, axis=0)
+    x_max, y_max = np.max(all_pts, axis=0)
+    margin = 0.15 * max(x_max - x_min, y_max - y_min, 1.0) + float(scan_radius)
+    ax.set_xlim(x_min - margin, x_max + margin)
+    ax.set_ylim(y_min - margin, y_max + margin)
+
+    ax.legend(loc="best", frameon=True)
+    plt.tight_layout()
+    plt.savefig(savepath)
+    plt.close()
 
 
 def plot_trajectory_parametric(
