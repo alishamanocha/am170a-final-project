@@ -12,6 +12,13 @@
 2. **Flow:** Start at (X_0,Y_0) → integrate **forward** toward target (X_T,Y_T) with small time steps. At each step, **check** whether there is still enough energy to stop and return; if not, **turn**, **stop**, then **return** to start. If the drone reaches the target, it stops there and returns.
 3. **Output:** All plots are written to the `plots/` directory.
 
+### Linear search demo
+
+Run a linear search along a vector with tangential scan circles and a random target on the vector:
+
+- **Run:** `python linear_search_main.py`
+- **Output:** `plots/linear_search_area.png`
+
 ---
 
 ## Simulation Model (`drone_sim.py`)
