@@ -36,7 +36,7 @@ FAR = 3.0 # Target distance (actual reach is energy-constrained to about 2.3 m)
 # Search directions
 # Start at  0°, then bisect: 180°, 90°, 270°, 45°
 ANGLES_DEG = [0, 180, 90, 270, 45]
-COLORS  = ['#1f77b4', '#ff7f0e', '#2ca02c', '#9467bd', '#d62728']
+COLORS  = ['#1f77b4', '#ff7f0e', "#3aad3a", '#9467bd', '#d62728']
 
 def simulate_search_vector(angle_deg):
     """
