@@ -25,7 +25,7 @@ import math
 #import numpy as np <- replace math with this
 from pathlib import Path
 from search_figure import simulate_search_vector
-#^ this function takes in an angle (make sure this is consistent either degrees or radius)
+#^ this function takes in an angle (make sure this is consistent either degrees or radians)
 
 
 
