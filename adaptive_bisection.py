@@ -9,6 +9,8 @@ of the linear search.
 - Recursively Calls itself until either the target is found or we are certain that the
   target is outside our drone flight capabilities
 
+Please note that this is meant to be called from another driver and is not meant to operate alone
+
 Authors: Alisha Moncha, Aydin Khan, Kamran Hussain, Reagan Ross
 """
 
@@ -22,10 +24,10 @@ unfinished things:
 
 
 import math
-#import numpy as np <- replace math with this
+#import numpy as np <- replace math with this in a bit
 from pathlib import Path
 from search_figure import simulate_search_vector
-#^ this function takes in an angle (make sure this is consistent either degrees or radius)
+#^ this function takes in an angle (make sure this is consistent either !degrees! or radians)
 
 
 
@@ -54,7 +56,8 @@ def angular_bisection(adist, pointA, max_dist_rad):
     #get actual midpoint (trig double check later)
     x_mid = max_dist_rad * math.cos(a_mid)
     y_mid = max_dist_rad * math.sin(a_mid)
-    return (x_mid,y_mid)
+    
+    return (x_mid,y_mid), a_mid
 
 """sort the list in order [0,...,2pi]"""
 def sort_list(list):
@@ -63,7 +66,7 @@ def sort_list(list):
 """Run the adaptive angular bisection until success"""
 def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= None): 
     #point_list will need to be empty in the first step of recursion and first step only
-    #max_chord is going to be precaclulated in one of the driver funcs
+    #max_arclength is updated each recursive iteration to be the maximum arclength along the circumference
     #max_dist_rad is the maximum distance our drone can travel
     #rad_search is the radius of the searching device
 
@@ -83,7 +86,7 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
         return adaptive_model(max_dist_rad, rad_search, point_list, max_dist_rad*math.pi)
 
     #recursive case
-    #if the we still have space on the circumference
+    #if we still have space on the circumference wil trigger
     elif max_arclength > tol:
         max_adist = 0
         for i in range(len(point_list) - 1): #I need to fix this its skipping things
@@ -95,18 +98,18 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
                 max_adist = curr_adist
                 A_keep = A
 
-        #in the case of max_adist == curr_adist, we can afford to do nothing since
+        #in the case of max_adist == curr_adist, we can choose to do nothing since
         #max_adist comes from an earlier set of points than curr_adist, and we want
         #to travel ccw on a list of sorted points
 
         #after we add the above, we search the max adist
         next_search = angular_bisection(max_adist, A_keep, max_dist_rad)
-        #call lsm for the wanted vector
-        target_maybe = simulate_search_vector(next_search) #use next_search results in parameters
+        #call ssv for the wanted vector
+        target_maybe = simulate_search_vector(next_search[1]) #use next_search results in parameters
         if target_maybe == True: #I will edit linear search to return something boolean if target was found
             print("Target found at:", target_maybe)
             return target_maybe
-        point_list.append(next_search) 
+        point_list.append(next_search[0]) 
         sort_list(point_list)
 
         #compute the new maximum arclength based off:
@@ -119,3 +122,4 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
     else:
         print("No target point within maximum searching range")
     return
+
