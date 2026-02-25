@@ -27,13 +27,7 @@ import math
 #import numpy as np <- replace math with this in a bit
 from pathlib import Path
 from search_figure import simulate_search_vector
-<<<<<<< HEAD
-#^ this function takes in an angle (make sure this is consistent either !degrees! or radians)
-=======
 #^ this function takes in an angle (make sure this is consistent either degrees or radians)
->>>>>>> fa41b463d592e3f9bfc815421c7dd4a39875fa09
-
-
 
 """Should find the angular distance between two different points on the circumference of a circle"""
 def angle_calc(pointA, pointB):
