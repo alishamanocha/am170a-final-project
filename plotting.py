@@ -272,7 +272,7 @@ def plot_multi_direction_lidar_coverage(
 
 
 def plot_trajectory_parametric(
-    x, y, x0, y0, xT, yT, xL, yL, r, turn_index, stopped_index, turned, located, savepath="parametric_trajectory.png"
+    x, y, x0, y0, xL, yL, r, turn_index, stopped_index, turned, located, savepath="parametric_trajectory.png"
 ):
     """
     Plot parametric solution of x(t) vs. y(t) split into forward and return phases.
@@ -314,7 +314,7 @@ def plot_trajectory_parametric(
         ax1.plot(x[: stopped_index + 1], y[: stopped_index + 1], lw=2.5, label="Forward")
 
     ax1.scatter(x0, y0, c="green", s=80, label="Start", zorder=5)
-    ax1.scatter(xT, yT, c="red", s=80, label="Target", zorder=5)
+    #ax1.scatter(xT, yT, c="red", s=80, label="Target", zorder=5)
     ax1.scatter(xL, yL, c="orange", s=80, label="Location", zorder=5)
 
     ax1.set_xlabel("x")
@@ -327,10 +327,10 @@ def plot_trajectory_parametric(
     # Pad bounds to include the target.
     x_forward = x[: stopped_index + 1]
     y_forward = y[: stopped_index + 1]
-    x_min = min(np.min(x_forward), xT)
-    x_max = max(np.max(x_forward), xT)
-    y_min = min(np.min(y_forward), yT)
-    y_max = max(np.max(y_forward), yT)
+    x_min = min(np.min(x_forward), xL)
+    x_max = max(np.max(x_forward), xL)
+    y_min = min(np.min(y_forward), yL)
+    y_max = max(np.max(y_forward), yL)
     x_range = x_max - x_min
     y_range = y_max - y_min
     margin = 0.1 * max(x_range, y_range, 0.5)
@@ -578,7 +578,7 @@ def plot_energy_to_return(e_turn_times, e_turn_tracker, expected_e_turn, e_used_
     """
     plt.figure(figsize=(9, 4), dpi=300)
     plt.plot(e_turn_times, e_turn_tracker, lw=2, label="Actual e_{turn}(t) + epsilon")
-    plt.plot(e_turn_times, expected_e_turn, "--", lw=2, label="Expected e_turn(t) + epsilon")
+    #plt.plot(e_turn_times, expected_e_turn, "--", lw=2, label="Expected e_turn(t) + epsilon")
     plt.plot(e_turn_times, e_used_tracker, lw=2, label="Available energy e_max(t) - e_used(t)")
     plt.axhline(y=e_max, color="red", linestyle="--", lw=2, label=f"Max energy ({e_max})")
 
