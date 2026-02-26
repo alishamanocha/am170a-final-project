@@ -9,6 +9,20 @@ of the linear search.
 - Recursively Calls itself until either the target is found or we are certain that the
   target is outside our drone flight capabilities
 
+Major Variables:
+*Note a is typically representative of an angle related variable
+- adist: The distance between 2 angle vectors
+- a_mid: the bisection result of 2 angle vectors
+- max_arclength: the maximum unsearched arclength on the circle
+- max_adist: the largest unsearched angle on the searching circle
+- max_dist_rad: the maximum distance the drone can travel in a stright line
+- next_search: desired searching angle and position
+- point_list: a list of points already searched on the circumference of our
+  potential search cirlce
+- rad_search: the radius of the scanning device's search
+- target_maybe: results from our linear search
+- tol: the arc between vectors that indicates we can exit the search
+
 Please note that this is meant to be called from another driver and is not meant to operate alone
 
 Authors: Alisha Moncha, Aydin Khan, Kamran Hussain, Reagan Ross
@@ -17,7 +31,6 @@ Authors: Alisha Moncha, Aydin Khan, Kamran Hussain, Reagan Ross
 """
 unfinished things:
 - debugging (if needed)
-- sort list func
 - connect to driver
 - validation
 """
@@ -34,11 +47,11 @@ def angle_calc(pointA, pointB):
     #get vector angle
     x1, y1 = pointA
     x2, y2 = pointB
-    theta1 =  math.atan2(y1, x1)
-    theta2 = math.atan2(y2, x2)
+    a1 =  math.atan2(y1, x1)
+    a2 = math.atan2(y2, x2)
     #distance between angles
-    adist = theta2 - theta1
-    #makes sure angle follows correct formatting for ease of use later
+    adist = a2 - a1
+    #makes sure angle is always within [0,2pi]
     if adist < 0:
         adist += 2*math.pi
     return adist
@@ -46,11 +59,12 @@ def angle_calc(pointA, pointB):
 """Finds the point we will plug into linear_search"""
 def angular_bisection(adist, pointA, max_dist_rad):
     x1, y1 = pointA
-    theta1 = math.atan2(y1, x1)
-    if theta1 < 0:
-        theta1 += 2*math.pi
+    a1 = math.atan2(y1, x1)
+    if a1 < 0:
+        a1 += 2*math.pi
     #getting midpoint angle: midpoint angle = left bound vector angle + angle distance/2
-    a_mid = theta1 + adist/2
+    a_mid = a1 + adist/2
+    a_mid %= 2*math.pi
     #get actual midpoint (trig double check later)
     x_mid = max_dist_rad * math.cos(a_mid)
     y_mid = max_dist_rad * math.sin(a_mid)
@@ -58,8 +72,17 @@ def angular_bisection(adist, pointA, max_dist_rad):
     return (x_mid,y_mid), a_mid
 
 """sort the list in order [0,...,2pi]"""
-def sort_list(list):
-    return
+def sort_list(list_p):
+    #rules for how the list is sorted
+    def ccw(point):
+        x, y = point
+        a = math.atan2(y, x)
+        if a < 0:
+            a += 2*math.pi 
+        return a
+    #actually sorting the list
+    list_p.sort(key=ccw)
+    return list_p
 
 """Run the adaptive angular bisection until success"""
 def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= None): 
@@ -87,10 +110,14 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
     #if we still have space on the circumference wil trigger
     elif max_arclength > tol:
         max_adist = 0
-        for i in range(len(point_list) - 1): #I need to fix this its skipping things
+        for i in range(len(point_list)):
         #we are going to pull two points
             A = point_list[i]
-            B = point_list[i + 1]
+            #just making sure it also get the max between the past point and 1st point in point_list
+            j = i + 1
+            if j == len(point_list):
+                j = 0
+            B = point_list[j]
             curr_adist = angle_calc(A, B)
             if curr_adist > max_adist:
                 max_adist = curr_adist
