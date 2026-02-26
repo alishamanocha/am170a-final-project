@@ -8,6 +8,7 @@ record the actual energy-constrained reach. LIDAR scan circles are placed every
 Authors: Alisha Manocha, Reagan Ross, Aydin Khan, Kamran Hussain
 """
 
+from math import e
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -18,10 +19,17 @@ from drone_sim import (
     check_energy_turn,
     forward_odes,
     stop_odes,
+    get_location_distance
+)
+from main import (
+    run_forward_phase,
+    run_stop_phase,
+    run_return_phase
 )
 
 # Simulation parameters
 X0, Y0 = 0.0, 0.0
+XL, YL = 3.0, 0.0 # Location of the desired person/thing to find
 T  = 1.0 # Flight time budget per leg
 M = 1.0 # Drone mass
 EH = 1.0 # Hovering energy rate
@@ -35,90 +43,109 @@ FAR = 3.0 # Target distance (actual reach is energy-constrained to about 2.3 m)
 
 # Search directions
 # Start at  0°, then bisect: 180°, 90°, 270°, 45°
-ANGLES_DEG = [0, 180, 90, 270, 45]
+ANGLES = [0, np.pi]
 COLORS  = ['#1f77b4', '#ff7f0e', "#3aad3a", '#9467bd', '#d62728']
 
-def simulate_search_vector(angle_deg):
+def travel_next_target(initial_state, xT, yT):
+    # Get current position of this travel phase
+    # Pass current position as initial position
+    params = [X0, Y0, xT, yT, T, M, EH]
+
+    # Run forward travel from initial position x_init, y_init to xT, yT
+    # Get in return: times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index
+    return run_forward_phase(
+        params, initial_state, E_MAX, EPS, TS
+    )
+
+def simulate_search_vector(angle):
     """
-    Simulate the drone flying outward along a given angle until the energy
-    margin forces a turn-around. Returns the (x, y) trajectory array and
+    Simulate the drone generating targets at regular intervals along a given angle until the energy
+    margin forces a turn-around or the destination is located. Returns the (x, y) trajectory array and
     the list of LIDAR scan stop positions.
     """
-    angle = np.radians(angle_deg)
     direction = np.array([np.cos(angle), np.sin(angle)])
-
-    # Place target some meters away so that the energy check actually stops the drone before arrival
-    xT = X0 + FAR * direction[0]
-    yT = Y0 + FAR * direction[1]
-
-    # Place the location off to the side so its never actually triggered
-    xL, yL = X0 + 9999.0, Y0 + 9999.0
-    r_loc = 0.001
 
     state = [X0, Y0, 0.0, 0.0, 0.0]
     t = 0.0
-
-    trajectory  = [np.array(state)]
-    times = [t]
-    e_turn_track = []
-    e_used_track = []
-
-    turned = False
-    turn_index  = None
-
-    while t < T:
-        sol = solve_ivp(
-            forward_odes,
-            (t, t + DT),
-            state,
-            args=([X0, Y0, xT, yT, T, M, EH],),
-            method="RK45",
-            max_step=DT,
-            rtol=1e-8,
-            atol=1e-10,
-        )
-        
-        for i in range(1, sol.y.shape[1]):
-            trajectory.append(sol.y[:, i])
-            times.append(sol.t[i])
-
-        state = sol.y[:, -1]
-        t = sol.t[-1]
-
-        margin_minus_eps = check_energy_turn(
-            t, state, E_MAX, EPS, TS, T, M, EH,
-            X0, Y0, e_turn_track, e_used_track
-        )
-
-        if margin_minus_eps <= 0:
-            turned  = True
-            turn_index = len(trajectory) - 1
-            break
-
-    trajectory = np.array(trajectory)
-    x_traj = trajectory[:, 0]
-    y_traj = trajectory[:, 1]
-
-    # Compute LIDAR scan positions
+    full_times = []
+    full_trajectory = []
+    full_e_turn_track = []
+    full_e_used_track = []
+    full_e_turn_times = []
     
-    # Place stops every 2*R_LIDAR of cumulative arc length along the trajectory
-    # At each stop the drone halts and scans a circle of radius R_LIDAR
-    cum_dist = np.zeros(len(x_traj))
-    for i in range(1, len(x_traj)):
-        cum_dist[i] = cum_dist[i-1] + np.hypot(x_traj[i] - x_traj[i-1], y_traj[i] - y_traj[i-1] )
+    turned = False
+    turn_index = None
+    located = False
+
+    # Place first target 2 * radius of LIDAR scan circle away from initial position
+    xT = X0 + 2 * R_LIDAR * direction[0]
+    yT = Y0 + 2 * R_LIDAR * direction[1]
+
+    while True:
+        # Travel to the next target
+        times, trajectory, e_turn_track, e_used_track, e_turn_times, turned, _ = travel_next_target(state, xT, yT)
+        full_times.extend(times)
+        full_trajectory.extend(trajectory)
+        full_e_turn_times.extend(e_turn_times)
+        full_e_turn_track.extend(e_turn_track)
+        full_e_used_track.extend(e_used_track)
+        state = full_trajectory[-1]
+
+        if turned:
+            turn_index = len(full_trajectory)-1
+            # Get the state at the point of deciding to return
+            turn_state = full_trajectory[-1]
+            sol_stop = run_stop_phase(turn_state, TS, M, EH)
+
+            # Add all times and state arrays into trajectory tracker, offsetting the times because
+            # we simulated from time 0 rather than the actual current time
+            t_offset = full_times[-1]
+            for i in range(1, sol_stop.y.shape[1]):
+                full_trajectory.append(sol_stop.y[:, i])
+                full_times.append(t_offset + sol_stop.t[i])
+            break
+        else:
+            print(f"Reached target! Now scanning! At position ({state[0], state[1]}), velocity ({state[2], state[3]}), energy used {state[4]}")
+            dist = get_location_distance(state, XL, YL)
+
+            if dist < R_LIDAR:
+                print(f"Found location at ({XL, YL})! Turning back!")
+                located = True
+                turned = True
+                turn_index = len(full_trajectory) - 1
+                break
+
+            # Didn't find target, generate new target
+            xT = state[0] + 2 * R_LIDAR * direction[0]
+            yT = state[1] + 2 * R_LIDAR * direction[1]
+    
+    # ---- Return phase ----
+    stopped_index = len(full_trajectory) - 1
+    stopped_state = full_trajectory[stopped_index]
+    print(f"Stopped state: {stopped_state}")
+    print("Now returning back to origin")
+    sol_return = run_return_phase(stopped_state, X0, Y0, T, M, EH)
         
-    max_dist = cum_dist[-1]
-    stop_distances = np.arange(R_LIDAR, max_dist, 2 * R_LIDAR)
+    # Add all times and state arrays into trajectory tracker, offsetting the times because we
+    # simulated from time 0 rather than the actual current time
+    t_offset = full_times[-1]
+    for i in range(1, sol_return.y.shape[1]):
+        full_trajectory.append(sol_return.y[:, i])
+        full_times.append(t_offset + sol_return.t[i])
 
-    scan_stops = []
-    for d in stop_distances:
-        idx = np.searchsorted(cum_dist, d)
-        idx = min(idx, len(x_traj) - 1)
-        scan_stops.append((x_traj[idx], y_traj[idx]))
+    full_trajectory = np.array(full_trajectory)
+    full_times = np.array(full_times)
+    full_e_used_track = np.array(full_e_used_track)
+    full_e_turn_track = np.array(full_e_turn_track)
 
-    print(f"Direction {angle_deg:>4} degrees: max reach = {max_dist:.3f} m, "f"{len(scan_stops)} scan stops")
+    x_traj = full_trajectory[:, 0]
+    y_traj = full_trajectory[:, 1]
 
-    return x_traj, y_traj, scan_stops, max_dist
+    print(f"Final position: ({x_traj[-1]}, {y_traj[-1]})")
+    if not located:
+        print("Did not find missing person")
+    
+    return x_traj, y_traj
 
 def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
     """
@@ -226,9 +253,12 @@ def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
 if __name__ == "__main__":
     print("Simulations for the 5 fixed angle search directions\n")
     results = []
-    for angle_deg in ANGLES_DEG:
-        print(f"Direction {angle_deg}")
-        result = simulate_search_vector(angle_deg)
-        results.append(result)
+    for angle in ANGLES:
+        print(f"Direction {angle}")
+        x_traj, y_traj = simulate_search_vector(angle)
+        fig, ax = plt.subplots(figsize=(8, 8), dpi=200)
+        ax.plot(x_traj, y_traj)
+        plt.show()
+        #results.append(result)
 
-    plot_search_pattern(results, savepath="plots/search_with_scanning.png")
+    #plot_search_pattern(results, savepath="plots/search_with_scanning.png")

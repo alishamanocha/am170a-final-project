@@ -22,6 +22,8 @@ from drone_sim import (
     stop_odes,
 )
 
+from params import Parameters
+
 from plotting import (
     plot_energy_to_return,
     plot_energy_used_vs_time,
@@ -73,7 +75,10 @@ def run_forward_phase(params, state, e_max, eps, ts):
     turned = False
     turn_index = None
     located = False
-    x0, y0, xT, yT, xL, yL, r, T, m, EH = params
+    x0, y0, xT, yT, T, m, EH = params
+
+    x_init = state[0]
+    y_init = state[1]
 
     while t < T:
         # Solve system of ODEs over a small time span with the current state and parameters
@@ -81,7 +86,7 @@ def run_forward_phase(params, state, e_max, eps, ts):
             forward_odes,
             (t, t + DT),
             state,
-            args=([x0, y0, xT, yT, T, m, EH],),
+            args=([x_init, y_init, xT, yT, T, m, EH],),
             method="RK45",
             max_step=DT,
             rtol=1e-8,
@@ -99,14 +104,6 @@ def run_forward_phase(params, state, e_max, eps, ts):
         state = sol.y[:, -1]
         t = sol.t[-1]
 
-        dist = get_location_distance(state, xL, yL)
-        if dist < r:
-            print("Found location! Turning back!")
-            located = True
-            turned = True
-            turn_index = len(trajectory) - 1
-            break
-
         # Get difference between energy margin that would remain after returning and epsilon
         margin_minus_eps = check_energy_turn(
             t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_used_tracker
@@ -120,7 +117,7 @@ def run_forward_phase(params, state, e_max, eps, ts):
             turn_index = len(trajectory) - 1
             break
 
-    return times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index, located
+    return times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index
 
 
 def run_stop_phase(turn_state, ts, m, EH):
@@ -158,13 +155,13 @@ def run_return_phase(stopped_state, x0, y0, T, m, EH):
         atol=1e-10,
     )
 
-
+# Note: this is broken rn, don't use
 def main():
-    params = [X0, Y0, XT, YT, XL, YL, R, T, M, EH]
+    params = [X0, Y0, XT, YT, T, M, EH]
     state = [X0, Y0, 0.0, 0.0, 0.0]
 
     # ---- Forward phase ----
-    times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index, located = run_forward_phase(
+    times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index = run_forward_phase(
         params, state, E_MAX, EPS, TS
     )
 

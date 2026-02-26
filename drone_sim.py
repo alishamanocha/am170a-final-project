@@ -146,13 +146,16 @@ def check_energy_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker
     # Compute energy margin after performing the return
     margin = e_left - e_turn
     
-    print(
-        f"t={t:.3f}, "
-        f"e_used={e_used:.3f}, "
-        f"e_stop={e_stop:.3f}, "
-        f"e_return={e_return:.3f}, "
-        f"margin={margin:.3f}"
-    )
+    # print(
+    #     f"t={t:.3f}, "
+    #     f"e_used={e_used:.3f}, "
+    #     f"e_stop={e_stop:.3f}, "
+    #     f"e_return={e_return:.3f}, "
+    #     f"margin={margin:.3f}"
+    # )
+
+    if margin<eps:
+        print(f"Need to return! Energy to return = {e_turn}, Energy available = {e_left}")
 
     return margin - eps
 
