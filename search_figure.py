@@ -81,7 +81,7 @@ def run_forward_phase(params, state, xT, yT):
 
         # Get difference between energy margin that would remain after returning and epsilon
         margin_minus_eps = check_energy_turn(
-            t, state, params.E_MAX, params.EPS, params.TS, params.T, params.M, params.EH, params.X0, params.Y0, e_turn_tracker, e_used_tracker
+            t, state, params.E_MAX, params.EPS, params.TS, params.T, params.M, params.EH, params.ES, params.X0, params.Y0, e_turn_tracker, e_used_tracker
         )
         e_turn_times.append(t)
 
@@ -150,6 +150,7 @@ def simulate_search_vector(angle, params):
     full_e_turn_track = []
     full_e_used_track = []
     full_e_turn_times = []
+    scan_indices = []
     
     turned = False
     turn_index = None
@@ -192,6 +193,12 @@ def simulate_search_vector(angle, params):
         else:
             print(f"Reached target! Now scanning! At position ({state[0], state[1]}), velocity ({state[2], state[3]}), energy used {state[4]}")
             dist = get_location_distance(state, params.XL, params.YL)
+            
+            state_after_scan = state.copy()
+            state_after_scan[4] += params.ES
+            full_trajectory.append(state_after_scan)
+            full_times.append(times[-1]) # Duplicating the existing last time, assuming scan is instantaneous
+            scan_indices.append(len(full_trajectory)-1)
 
             if dist < params.R_SCAN:
                 print(f"Found location at ({params.XL, params.YL})! Turning back!")
@@ -228,7 +235,7 @@ def simulate_search_vector(angle, params):
     if not located:
         print("Did not find missing person")
     
-    return full_trajectory, full_times, full_e_used_track, full_e_turn_track, full_e_turn_times, turned, located, turn_index, stopped_index
+    return full_trajectory, full_times, full_e_used_track, full_e_turn_track, full_e_turn_times, turned, located, turn_index, stopped_index, scan_indices
 
 # def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
 #     """

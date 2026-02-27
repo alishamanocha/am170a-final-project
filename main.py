@@ -55,6 +55,7 @@ def main():
         T = 1.0,
         M = 1.0,
         EH = 1.0,
+        ES = 0.3,
         E_MAX = 35.0,
         DT = 1e-3,
         EPS = 5e-2,
@@ -64,7 +65,7 @@ def main():
     angles = [0]
     for angle in angles:
         print(f"Direction {angle}")
-        full_trajectory, full_times, full_e_used_track, full_e_turn_track, full_e_turn_times, turned, located, turn_index, stopped_index = simulate_search_vector(angle, params)
+        full_trajectory, full_times, full_e_used_track, full_e_turn_track, full_e_turn_times, turned, located, turn_index, stopped_index, scan_indices = simulate_search_vector(angle, params)
         x = full_trajectory[:,0]
         print(x)
         y = full_trajectory[:,1]
@@ -73,6 +74,9 @@ def main():
         speed = np.hypot(vx_traj, vy_traj)
         e_traj = full_trajectory[:,4]
         print(full_times)
+        for i, idx in enumerate(scan_indices):
+            print(f"State before scan {i+1}: {full_trajectory[idx-1]}")
+            print(f"State after scan {i+1}: {full_trajectory[idx]}")
         expected_e_turn = expected_return_energy(full_e_turn_times, params.EH, params.TS, params.T, params.M, params.X0, params.Y0, params.XL, params.YL)
         plot_trajectory_parametric(x, y, params.X0, params.Y0, params.XL, params.YL, params.R_SCAN, turn_index, stopped_index, turned, located)
         plot_speed_vs_time(full_times, speed, turn_index, stopped_index, turned)
