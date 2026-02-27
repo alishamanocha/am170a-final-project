@@ -69,7 +69,7 @@ def angular_bisection(adist, pointA, max_dist_rad):
     x_mid = max_dist_rad * math.cos(a_mid)
     y_mid = max_dist_rad * math.sin(a_mid)
     
-    return (x_mid,y_mid), a_mid
+    return a_mid, (x_mid,y_mid)
 
 """sort the list in order [0,...,2pi]"""
 def sort_list(list_p):
@@ -91,8 +91,6 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
     #max_dist_rad is the maximum distance our drone can travel
     #rad_search is the radius of the searching device
 
-    #tol = 2 * R *sin(r/R)
-    tol = 2*max_dist_rad *math.asin(rad_search/max_dist_rad)
 
     #base cases
     if point_list is None:
@@ -108,7 +106,8 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
 
     #recursive case
     #if we still have space on the circumference wil trigger
-    elif max_arclength > tol:
+    #tol = 2 * R *sin(r/R)
+    elif max_arclength > 2*max_dist_rad *math.asin(rad_search/max_dist_rad):
         max_adist = 0
         for i in range(len(point_list)):
         #we are going to pull two points
@@ -130,11 +129,11 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
         #after we add the above, we search the max adist
         next_search = angular_bisection(max_adist, A_keep, max_dist_rad)
         #call ssv for the wanted vector
-        target_maybe = simulate_search_vector(next_search[1]) #use next_search results in parameters
-        if target_maybe == True: #I will edit linear search to return something boolean if target was found
-            print("Target found at:", target_maybe)
+        target_maybe = simulate_search_vector(next_search[0]) #use next_search results in parameters
+        if target_maybe[6] == True:
+            print(target_maybe)
             return target_maybe
-        point_list.append(next_search[0]) 
+        point_list.append(next_search[1]) 
         sort_list(point_list)
 
         #compute the new maximum arclength based off:
@@ -147,4 +146,8 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
     else:
         print("No target point within maximum searching range")
     return
+
+#just for quick debugging purposes delte later
+if __name__ == "__main__":
+    adaptive_model(700, 5)
 

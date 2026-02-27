@@ -9,6 +9,7 @@ Authors: Alisha Manocha, Reagan Ross, Aydin Khan, Kamran Hussain
 """
 
 from math import e
+from math import pi
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
