@@ -16,6 +16,7 @@ class Parameters:
 
     M: float # Drone mass
     EH: float # Hovering energy per second
+    ES: float # Constant energy to perform one scan
     E_MAX: float # Max energy budget
 
     DT: float

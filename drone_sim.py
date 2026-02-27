@@ -119,10 +119,11 @@ def check_return_energy(state, T, m, EH, x0, y0):
         raise RuntimeError("Returning integration failed")
 
 """Check whether, at the current time, the drone has enough energy remaining to come to a stop in a
-fixed amount of time and then return from that point back to the starting point. The energy margin
-that would be left after performing this return is compared to a given epsilon, below which the drone
-should turn back. Returns the difference between the margin and epsilon."""
-def check_energy_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_used_tracker):
+fixed amount of time and then return from that point back to the starting point, and if it has enough
+energy to perform one more scan. The energy margin that would be left after performing this return is
+compared to a given epsilon, below which the drone should turn back. Returns the difference between
+the margin and epsilon."""
+def check_energy_turn(t, state, e_max, eps, ts, T, m, EH, ES, x0, y0, e_turn_tracker, e_used_tracker):
     # Get the amount of energy used thus far
     e_used = state[4]
 
@@ -143,8 +144,8 @@ def check_energy_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker
     e_used_tracker.append(e_used)
     e_turn_tracker.append(e_turn)
 
-    # Compute energy margin after performing the return
-    margin = e_left - e_turn
+    # Compute energy margin after performing the return and one more scan
+    margin = e_left - e_turn - ES
     
     # print(
     #     f"t={t:.3f}, "
@@ -155,7 +156,7 @@ def check_energy_turn(t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker
     # )
 
     if margin<eps:
-        print(f"Need to return! Energy to return = {e_turn}, Energy available = {e_left}")
+        print(f"Need to return! Energy to return = {e_turn}, Energy to scan = {ES}, Energy available = {e_left}")
 
     return margin - eps
 
