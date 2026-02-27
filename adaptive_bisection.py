@@ -37,7 +37,7 @@ unfinished things:
 
 
 import math
-#import numpy as np <- replace math with this in a bit
+import numpy as np
 from pathlib import Path
 from search_figure import simulate_search_vector
 #^ this function takes in an angle (make sure this is consistent either degrees or radians)
@@ -56,6 +56,7 @@ def angle_calc(pointA, pointB):
         adist += 2*math.pi
     return adist
 
+
 """Finds the point we will plug into linear_search"""
 def angular_bisection(adist, pointA, max_dist_rad):
     x1, y1 = pointA
@@ -68,6 +69,7 @@ def angular_bisection(adist, pointA, max_dist_rad):
     #get actual midpoint (trig double check later)
     x_mid = max_dist_rad * math.cos(a_mid)
     y_mid = max_dist_rad * math.sin(a_mid)
+    print("Current angle: ", a_mid)
     
     return a_mid, (x_mid,y_mid)
 
@@ -85,7 +87,7 @@ def sort_list(list_p):
     return list_p
 
 """Run the adaptive angular bisection until success"""
-def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= None): 
+def adaptive_model(params, rad_search, max_dist_rad = None, point_list = None, max_arclength= None, n = None): 
     #point_list will need to be empty in the first step of recursion and first step only
     #max_arclength is updated each recursive iteration to be the maximum arclength along the circumference
     #max_dist_rad is the maximum distance our drone can travel
@@ -95,19 +97,36 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
     #base cases
     if point_list is None:
         point_list = []
-        point_list.append((max_dist_rad, 0.0)) #in list write starting point aka point at angle 0
         #use lsm on 0 degree of unit circle
-        simulate_search_vector(0)
-        return adaptive_model(max_dist_rad, rad_search, point_list, 2*math.pi*max_dist_rad)
+        target_maybe = simulate_search_vector(0, params)
+        print("Linear search count: 1")
+        if target_maybe[6] == True:
+            return target_maybe
+        
+
+        #calculate max_dist_rad from linear search results
+        full_trajectory = target_maybe[0]
+        r = np.hypot(full_trajectory[:,0] - params.X0, full_trajectory[:,1] - params.Y0)
+        max_dist_rad = np.max(r)
+        print(max_dist_rad)
+
+        point_list.append((max_dist_rad, 0.0)) #in list write starting point aka point at angle 0
+        return adaptive_model(params, rad_search, max_dist_rad, point_list, 2*math.pi*max_dist_rad, 1)
     elif len(point_list) == 1:
         point_list.append((-1* max_dist_rad, 0.0))
-        simulate_search_vector(math.pi)
-        return adaptive_model(max_dist_rad, rad_search, point_list, max_dist_rad*math.pi)
+        target_maybe = simulate_search_vector(math.pi, params)
+        print("Linear Search count: 2")
+        if target_maybe[6] == True:
+            #print(target_maybe)
+            return target_maybe
+        return adaptive_model(params, rad_search, max_dist_rad, point_list, max_dist_rad*math.pi, 2)
 
     #recursive case
     #if we still have space on the circumference wil trigger
     #tol = 2 * R *sin(r/R)
     elif max_arclength > 2*max_dist_rad *math.asin(rad_search/max_dist_rad):
+        n += 1
+        print("Linear search count: ", n)
         max_adist = 0
         for i in range(len(point_list)):
         #we are going to pull two points
@@ -118,9 +137,10 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
                 j = 0
             B = point_list[j]
             curr_adist = angle_calc(A, B)
-            if curr_adist > max_adist:
+            if curr_adist > max_adist + 1e-12: #order debugging tol
                 max_adist = curr_adist
                 A_keep = A
+
 
         #in the case of max_adist == curr_adist, we can choose to do nothing since
         #max_adist comes from an earlier set of points than curr_adist, and we want
@@ -129,9 +149,9 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
         #after we add the above, we search the max adist
         next_search = angular_bisection(max_adist, A_keep, max_dist_rad)
         #call ssv for the wanted vector
-        target_maybe = simulate_search_vector(next_search[0]) #use next_search results in parameters
+        target_maybe = simulate_search_vector(next_search[0], params) #use next_search results in parameters
         if target_maybe[6] == True:
-            print(target_maybe)
+            #print(target_maybe)
             return target_maybe
         point_list.append(next_search[1]) 
         sort_list(point_list)
@@ -141,13 +161,10 @@ def adaptive_model(max_dist_rad, rad_search, point_list = None, max_arclength= N
         new_max_al = max_dist_rad*max_adist
 
         #recursively iterate
-        return adaptive_model(max_dist_rad, rad_search, point_list, new_max_al)
+        return adaptive_model(params, rad_search, max_dist_rad,  point_list, new_max_al, n)
 
     else:
         print("No target point within maximum searching range")
     return
 
-#just for quick debugging purposes delte later
-if __name__ == "__main__":
-    adaptive_model(700, 5)
 
