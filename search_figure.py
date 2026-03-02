@@ -28,6 +28,7 @@ from plotting import (
     plot_speed_vs_time,
     plot_trajectory_parametric,
     plot_energy_to_return,
+    plot_energy_used_vs_time,
     plot_energy_error_tolerance
 )
 
@@ -198,7 +199,7 @@ def simulate_search_vector(angle, params):
             state_after_scan = state.copy()
             state_after_scan[4] += params.ES
             full_trajectory.append(state_after_scan)
-            full_times.append(times[-1]) # Duplicating the existing last time, assuming scan is instantaneous
+            full_times.append(full_times[-1]) # Duplicating the existing last time, assuming scan is instantaneous
             scan_indices.append(len(full_trajectory)-1)
 
             if dist < params.R_SCAN:
@@ -236,6 +237,7 @@ def simulate_search_vector(angle, params):
     if not located:
         print("Did not find missing person")
     
+    plot_energy_used_vs_time(full_times, full_trajectory[:,4], params.E_MAX, turn_index, stopped_index, turned)
     return full_trajectory, full_times, full_e_used_track, full_e_turn_track, full_e_turn_times, turned, located, turn_index, stopped_index, scan_indices
 
 # def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
