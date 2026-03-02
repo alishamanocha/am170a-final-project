@@ -556,6 +556,7 @@ def plot_energy_used_vs_time(
         [l for _, l in reordered],
         loc="upper left",
     )
+    plt.yticks(np.arange(0, e_max + 1, 2))
     plt.tight_layout()
     plt.savefig(savepath)
     plt.close()

@@ -196,9 +196,8 @@ def simulate_search_vector(angle, params):
             print(f"Reached target! Now scanning! At position ({state[0], state[1]}), velocity ({state[2], state[3]}), energy used {state[4]}")
             dist = get_location_distance(state, params.XL, params.YL)
             
-            state_after_scan = state.copy()
-            state_after_scan[4] += params.ES
-            full_trajectory.append(state_after_scan)
+            state[4] += params.ES
+            full_trajectory.append(state)
             full_times.append(full_times[-1]) # Duplicating the existing last time, assuming scan is instantaneous
             scan_indices.append(len(full_trajectory)-1)
 
