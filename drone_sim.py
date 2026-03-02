@@ -96,21 +96,21 @@ def check_stop_energy(state, ts, m, EH):
 
 """Estimate the amount of energy needed to return back to the starting point given a current state
 of the drone by using solve_ivp to simulate flight forward."""
-def check_return_energy(state, T, m, EH, x0, y0):
+def check_return_energy(state, tr, m, EH, x0, y0):
     # Get the current state of the drone after coming to a stop
     x, y, vx, vy, e = state
     # Pass in current position as starting point, initial starting point of the whole journey as
     # ending point, flight time, mass, hovering energy
-    params = [x, y, x0, y0, T, m, EH]
+    params = [x, y, x0, y0, tr, m, EH]
 
     # Use the current position, velocity = 0, and energy = 0 as to not include energy already used
     # in returning energy estimate
     initial_state = [x, y, 0, 0, 0]
     # Simulate from time 0 to flight time
     t0 = 0.0
-    tspan = np.linspace(t0, T, 100)
+    tspan = np.linspace(t0, tr, 100)
 
-    sol = solve_ivp(forward_odes, (t0, T), initial_state, args=(params,), t_eval=tspan, method="RK45", rtol=1e-8, atol=1e-10)
+    sol = solve_ivp(forward_odes, (t0, tr), initial_state, args=(params,), t_eval=tspan, method="RK45", rtol=1e-8, atol=1e-10)
 
     if sol.success:
         # Return the amount of energy used to return
@@ -123,7 +123,7 @@ fixed amount of time and then return from that point back to the starting point,
 energy to perform one more scan. The energy margin that would be left after performing this return is
 compared to a given epsilon, below which the drone should turn back. Returns the difference between
 the margin and epsilon."""
-def check_energy_turn(t, state, e_max, eps, ts, T, m, EH, ES, x0, y0, e_turn_tracker, e_used_tracker):
+def check_energy_turn(t, state, e_max, eps, ts, tr, m, EH, ES, x0, y0, e_turn_tracker, e_used_tracker):
     # Get the amount of energy used thus far
     e_used = state[4]
 
@@ -135,7 +135,7 @@ def check_energy_turn(t, state, e_max, eps, ts, T, m, EH, ES, x0, y0, e_turn_tra
     e_stop = stopped_state[4]
 
     # Compute the amount of energy needed to return from the state after stopping
-    return_state = check_return_energy(stopped_state, T, m, EH, x0, y0)
+    return_state = check_return_energy(stopped_state, tr, m, EH, x0, y0)
     e_return = return_state[4]
 
     e_turn = e_stop + e_return

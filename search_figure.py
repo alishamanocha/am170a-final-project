@@ -83,7 +83,7 @@ def run_forward_phase(params, state, xT, yT):
 
         # Get difference between energy margin that would remain after returning and epsilon
         margin_minus_eps = check_energy_turn(
-            t, state, params.E_MAX, params.EPS, params.TS, params.T, params.M, params.EH, params.ES, params.X0, params.Y0, e_turn_tracker, e_used_tracker
+            t, state, params.E_MAX, params.EPS, params.TS, params.TR, params.M, params.EH, params.ES, params.X0, params.Y0, e_turn_tracker, e_used_tracker
         )
         e_turn_times.append(t)
 
@@ -119,15 +119,15 @@ def run_return_phase(stopped_state, params):
     """Integrate return from stopped state to (x0, y0). Returns solution."""
     # Pass in stopped position as initial position, initial starting point as ending position, flight
     # time, mass, and hovering energy as parameters
-    params_return = [stopped_state[0], stopped_state[1], params.X0, params.Y0, params.T, params.M, params.EH]
+    params_return = [stopped_state[0], stopped_state[1], params.X0, params.Y0, params.TR, params.M, params.EH]
     # Return to initial point
     return solve_ivp(
         forward_odes,
-        (0, params.T),
+        (0, params.TR),
         stopped_state,
         args=(params_return,),
         method="RK45",
-        max_step=params.T / 200,
+        max_step=params.TR / 200,
         rtol=1e-8,
         atol=1e-10,
     )

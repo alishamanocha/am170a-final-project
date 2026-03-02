@@ -1,7 +1,6 @@
 # Place to store global parameters
 from dataclasses import dataclass
 
-# TODO: Instantiate this in main and then just pass around that object everywhere
 @dataclass
 class Parameters:
     # Initial position
@@ -21,8 +20,13 @@ class Parameters:
 
     DT: float
     EPS: float # Threshold used to determine if the drone should return midway (if energy margin < eps)
-    
+
     # Time to come to a stop when turning midway
     @property
     def TS(self):
         return self.T / 20
+
+    # Time to return back to the charging station
+    @property
+    def TR(self):
+        return self.T * 5
