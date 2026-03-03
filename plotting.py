@@ -491,9 +491,7 @@ def plot_energy_used_vs_time(
     times,
     e,
     e_max,
-    turn_index=None,
-    stopped_index=None,
-    turned=False,
+    segment_indices=None,
     savepath="energy_used_vs_time.png",
 ):
     """
@@ -526,21 +524,15 @@ def plot_energy_used_vs_time(
     plt.plot(times, e, color="blue", lw=2, label="e(t)")
     plt.axhline(y=e_max, color="red", linestyle="--", lw=2, label=f"Max energy ({e_max})")
 
-    if turned and turn_index is not None and stopped_index is not None:
-        plt.axvline(
-            times[turn_index],
-            color="orange",
-            ls="--",
-            lw=2,
-            label="Turn decision",
-        )
-        plt.axvline(
-            times[stopped_index],
-            color="purple",
-            ls=":",
-            lw=2,
-            label="Stopped",
-        )
+    if segment_indices is not None:
+        for i, (turn_idx, stopped_idx, charge_idx) in enumerate(segment_indices):
+            label_turn = "Turn decision" if i == 0 else None
+            label_stop = "Stopped" if i == 0 else None
+            label_charge = "Recharge" if i == 0 else None
+            plt.axvline(times[turn_idx], color="orange", ls="--", lw=2, label=label_turn)
+            plt.axvline(times[stopped_idx], color="purple", ls=":", lw=2, label=label_stop)
+            if charge_idx is not None:
+                plt.axvline(times[charge_idx], color="green", ls="-", lw=2, label=label_charge)
 
     plt.xlabel("Time")
     plt.ylabel("Energy used")
@@ -548,8 +540,8 @@ def plot_energy_used_vs_time(
 
     handles, labels = plt.gca().get_legend_handles_labels()
     order = ["e(t)", f"Max energy ({e_max})", "Energy remaining"]
-    if turned and turn_index is not None and stopped_index is not None:
-        order.extend(["Stopped", "Turn decision"])
+    if segment_indices is not None:
+        order.extend(["Turn decision", "Stopped", "Recharge"])
     reordered = [(h, l) for l in order for h, lab in zip(handles, labels) if lab == l]
     plt.legend(
         [h for h, _ in reordered],
@@ -561,6 +553,70 @@ def plot_energy_used_vs_time(
     plt.savefig(savepath)
     plt.close()
 
+def plot_energy_remaining_vs_time(
+    times,
+    e_remaining,
+    e_max,
+    segment_indices=None,
+    savepath="energy_remaining_vs_time.png",
+):
+    """
+    Plot energy used over time with max energy line, energy-remaining fill,
+    and optional turn/stopped markers.
+
+    Args:
+        times (numpy.ndarray): The time values.
+        e (numpy.ndarray): The energy used by the drone.
+        e_max (float): Maximum energy budget (horizontal line and fill ceiling).
+        segment_indices: List of (turn_index, stopped_index, charge_index) per linear search
+        savepath (str): The path to save the plot.
+
+    Returns:
+        None
+    """
+    plt.figure(figsize=(9, 4), dpi=300)
+    plt.grid(True, color="lightgray", linestyle="-", linewidth=0.5)
+
+    plt.fill_between(
+        times,
+        e_remaining,
+        e_max,
+        color="green",
+        alpha=0.25,
+        label="Energy used",
+    )
+    plt.plot(times, e_remaining, color="blue", lw=2, label=f"Remaining energy {e_max}-e(t)")
+    plt.axhline(y=e_max, color="red", linestyle="--", lw=2, label=f"Max energy ({e_max})")
+
+    if segment_indices is not None:
+        for i, (turn_idx, stopped_idx, charge_idx) in enumerate(segment_indices):
+            label_turn = "Turn decision" if i == 0 else None
+            label_stop = "Stopped" if i == 0 else None
+            label_charge = "Recharge" if i == 0 else None
+            plt.axvline(times[turn_idx], color="orange", ls="--", lw=2, label=label_turn)
+            plt.axvline(times[stopped_idx], color="purple", ls=":", lw=2, label=label_stop)
+            if charge_idx is not None:
+                plt.axvline(times[charge_idx], color="green", ls="-", lw=2, label=label_charge)
+
+    plt.xlabel("Time")
+    plt.ylabel("Energy remaining")
+    plt.title("Energy remaining vs time")
+
+    handles, labels = plt.gca().get_legend_handles_labels()
+    order = [f"Remaining energy {e_max}-e(t)", f"Max energy ({e_max})", "Energy used"]
+    if segment_indices is not None:
+        order.extend(["Turn decision", "Stopped", "Recharge"])
+    reordered = [(h, l) for l in order for h, lab in zip(handles, labels) if lab == l]
+    plt.legend(
+        [h for h, _ in reordered],
+        [l for _, l in reordered],
+        loc="upper left",
+    )
+    plt.yticks(np.arange(0, e_max + 1, 2))
+    plt.ylim(0, e_max * 1.05)
+    plt.tight_layout()
+    plt.savefig(savepath)
+    plt.close()
 
 def plot_energy_to_return(e_turn_times, e_turn_tracker, expected_e_turn, e_used_tracker, e_max, savepath="energy_to_return.png"):
     """

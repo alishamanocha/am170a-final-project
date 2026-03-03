@@ -29,6 +29,7 @@ from search_figure import (
 from params import Parameters
 
 from plotting import (
+    plot_energy_remaining_vs_time,
     plot_energy_to_return,
     plot_energy_used_vs_time,
     plot_position_and_speed_vs_time,
@@ -51,8 +52,8 @@ def main():
     params = Parameters(
         X0 = 0.0,
         Y0 = 0.0,
-        XL = 3.1,
-        YL = -0.5,
+        XL = 0.1,
+        YL = 3.5,
         R_SCAN = 0.25,
         T = 1.0,
         M = 1.0,
@@ -67,8 +68,37 @@ def main():
 
     #main search function
     print("Running our search algorithm")
-    adaptive_model(params, rad_search=params.R_SCAN, max_dist_rad = None, point_list = None, max_arclength= None)
+    all_results = adaptive_model(params, rad_search=params.R_SCAN, max_dist_rad = None, point_list = None, max_arclength= None)
     print("Finished our Search Algorithm")
+
+    print(type(all_results), len(all_results))
+    # Stitch together full trajectory
+    full_times = []
+    full_traj = []
+    segment_indices = []
+    current_offset = 0
+
+    for i, result in enumerate(all_results):
+        traj, times = result[0], result[1]
+        turn_index, stopped_index = result[7], result[8]
+        if len(full_times) == 0:
+            full_times.extend(times)
+            full_traj.extend(traj)
+        else:
+            t_offset = full_times[-1]
+            full_times.extend([t_offset + t for t in times[1:]])
+            full_traj.extend(traj[1:])
+        segment_indices.append((
+            current_offset + turn_index,
+            current_offset + stopped_index,
+            current_offset + len(times) - 1 if i < len(all_results) - 1 else None
+        ))
+        current_offset += len(times) - 1
+
+    full_traj = np.array(full_traj)
+    full_times = np.array(full_times)
+    plot_energy_used_vs_time(full_times, full_traj[:, 4], params.E_MAX, segment_indices)
+    plot_energy_remaining_vs_time(full_times, params.E_MAX - full_traj[:, 4], params.E_MAX, segment_indices)
 
     #print("Simulations for the 5 fixed angle search directions\n")
     #results = []

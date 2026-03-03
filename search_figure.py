@@ -235,8 +235,7 @@ def simulate_search_vector(angle, params):
     print(f"Final position: ({full_trajectory[-1][0]}, {full_trajectory[-1][1]})")
     if not located:
         print("Did not find missing person")
-    
-    plot_energy_used_vs_time(full_times, full_trajectory[:,4], params.E_MAX, turn_index, stopped_index, turned)
+
     return full_trajectory, full_times, full_e_used_track, full_e_turn_track, full_e_turn_times, turned, located, turn_index, stopped_index, scan_indices
 
 # def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
