@@ -6,6 +6,7 @@ Script that visualizes the drone simulation results and produces the figures lin
 Author: Alisha Manocha, Reagan Ross, Aydin Khan, Roberto Julian Campos, Kamran Hussain
 """
 
+from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
@@ -526,11 +527,11 @@ def plot_energy_used_vs_time(
 
     if segment_indices is not None:
         for i, (turn_idx, stopped_idx, charge_idx) in enumerate(segment_indices):
-            label_turn = "Turn decision" if i == 0 else None
-            label_stop = "Stopped" if i == 0 else None
+            label_turn = "Return" if i == 0 else None
+            # label_stop = "Stopped" if i == 0 else None
             label_charge = "Recharge" if i == 0 else None
             plt.axvline(times[turn_idx], color="orange", ls="--", lw=2, label=label_turn)
-            plt.axvline(times[stopped_idx], color="purple", ls=":", lw=2, label=label_stop)
+            # plt.axvline(times[stopped_idx], color="purple", ls=":", lw=2, label=label_stop)
             if charge_idx is not None:
                 plt.axvline(times[charge_idx], color="green", ls="-", lw=2, label=label_charge)
 
@@ -541,14 +542,17 @@ def plot_energy_used_vs_time(
     handles, labels = plt.gca().get_legend_handles_labels()
     order = ["e(t)", f"Max energy ({e_max})", "Energy remaining"]
     if segment_indices is not None:
-        order.extend(["Turn decision", "Stopped", "Recharge"])
+        order.extend([
+            "Return", 
+            #"Stopped",
+            "Recharge"
+        ])
     reordered = [(h, l) for l in order for h, lab in zip(handles, labels) if lab == l]
     plt.legend(
         [h for h, _ in reordered],
         [l for _, l in reordered],
         loc="upper left",
     )
-    plt.yticks(np.arange(0, e_max + 1, 2))
     plt.tight_layout()
     plt.savefig(savepath)
     plt.close()
@@ -581,38 +585,56 @@ def plot_energy_remaining_vs_time(
         times,
         e_remaining,
         e_max,
-        color="green",
-        alpha=0.25,
+        color="red",
+        alpha=0.1,
         label="Energy used",
     )
-    plt.plot(times, e_remaining, color="blue", lw=2, label=f"Remaining energy {e_max}-e(t)")
+    plt.plot(times, e_remaining, color="blue", lw=2, label=f"Remaining energy")
     plt.axhline(y=e_max, color="red", linestyle="--", lw=2, label=f"Max energy ({e_max})")
 
     if segment_indices is not None:
         for i, (turn_idx, stopped_idx, charge_idx) in enumerate(segment_indices):
-            label_turn = "Turn decision" if i == 0 else None
-            label_stop = "Stopped" if i == 0 else None
-            label_charge = "Recharge" if i == 0 else None
+            label_turn = "Return" if i == 0 else None
+            # label_stop = "Stopped" if i == 0 else None
             plt.axvline(times[turn_idx], color="orange", ls="--", lw=2, label=label_turn)
-            plt.axvline(times[stopped_idx], color="purple", ls=":", lw=2, label=label_stop)
+            # plt.axvline(times[stopped_idx], color="purple", ls=":", lw=2, label=label_stop)
             if charge_idx is not None:
-                plt.axvline(times[charge_idx], color="green", ls="-", lw=2, label=label_charge)
+                plt.annotate(
+                    "",
+                    xy=(times[charge_idx], e_max),      # arrow tip (top)
+                    xytext=(times[charge_idx], 0),      # arrow start (bottom)
+                    arrowprops=dict(
+                        arrowstyle="->",
+                        color="green",
+                        lw=2.5
+                    ),
+                )
+            green_arrow = Line2D([0], [0], color="green", lw=2.5, label="Recharge")
 
     plt.xlabel("Time")
     plt.ylabel("Energy remaining")
-    plt.title("Energy remaining vs time")
+    plt.title("Energy remaining vs. time")
 
     handles, labels = plt.gca().get_legend_handles_labels()
-    order = [f"Remaining energy {e_max}-e(t)", f"Max energy ({e_max})", "Energy used"]
+    handles.append(green_arrow)
+    labels.append("Recharge")
+    order = [f"Remaining energy", f"Max energy ({e_max})", "Energy used"]
     if segment_indices is not None:
-        order.extend(["Turn decision", "Stopped", "Recharge"])
+        order.extend([
+            "Return",
+            # "Stopped",
+            "Recharge"
+        ])
     reordered = [(h, l) for l in order for h, lab in zip(handles, labels) if lab == l]
     plt.legend(
         [h for h, _ in reordered],
         [l for _, l in reordered],
         loc="upper left",
+        bbox_to_anchor=(1.02, 1),
+        borderaxespad=0,
+        framealpha=1.0,
     )
-    plt.yticks(np.arange(0, e_max + 1, 2))
+    plt.xlim(0, times[-1])
     plt.ylim(0, e_max * 1.05)
     plt.tight_layout()
     plt.savefig(savepath)

@@ -71,7 +71,6 @@ def main():
     all_results = adaptive_model(params, rad_search=params.R_SCAN, max_dist_rad = None, point_list = None, max_arclength= None)
     print("Finished our Search Algorithm")
 
-    print(type(all_results), len(all_results))
     # Stitch together full trajectory
     full_times = []
     full_traj = []
