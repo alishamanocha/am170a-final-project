@@ -37,10 +37,6 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PLOTS_DIR = SCRIPT_DIR / "plots"
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def extract_scan_centers(all_results: list, params) -> np.ndarray:
     """
     Pull every (x, y) scan center out of the adaptive_model result list.
