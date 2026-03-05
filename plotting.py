@@ -37,8 +37,8 @@ def plot_trajectory_parametric(
     # Left subplot (forward journey)
     if turned:
         ax1.plot(x[: turn_index + 1],y[: turn_index + 1],lw=2.5, label="Forward", color="tab:blue")
-        ax1.plot(x[turn_index : stopped_index + 1],y[turn_index : stopped_index + 1],":",lw=2,label="Stopping", color="tab:orange")
-        ax1.scatter(x[turn_index],y[turn_index],c="orange",s=100,marker="x",label="Turn decision",zorder=5,)
+        ax1.plot(x[turn_index : stopped_index + 1],y[turn_index : stopped_index + 1],"--",lw=2,label="Stopping", color="tab:orange")
+        ax1.scatter(x[turn_index],y[turn_index],c="orange",s=50,marker="x",label="Turn decision",zorder=5,)
         ax1.scatter(x[stopped_index],y[stopped_index],c="purple",s=100,marker="s",label="Stopped",zorder=5,)
     else:
         ax1.plot(x[: stopped_index + 1], y[: stopped_index + 1], lw=2.5, label="Forward")
@@ -46,10 +46,10 @@ def plot_trajectory_parametric(
     ax1.scatter(x0, y0, c="green", s=80, label="Start", zorder=5)
     ax1.scatter(xT, yT, c="red", s=80, label="Target", zorder=5)
 
-    ax1.set_xlabel("x")
-    ax1.set_ylabel("y")
-    ax1.set_title("Forward Journey")
-    ax1.legend(loc="best")
+    ax1.set_xlabel("x",fontsize=14)
+    ax1.set_ylabel("y",fontsize=14)
+    ax1.set_title("Forward Journey",fontsize=15)
+    ax1.legend(loc="best", fontsize=12)
     ax1.grid(True, alpha=0.3)
     ax1.set_aspect('equal', adjustable='box')
 
@@ -62,7 +62,7 @@ def plot_trajectory_parametric(
     y_max = max(np.max(y_forward), yT)
     x_range = x_max - x_min
     y_range = y_max - y_min
-    margin = 0.1 * max(x_range, y_range, 0.5)
+    margin = 0.2 * max(x_range, y_range, 0.5)
     ax1.set_xlim(x_min - margin, x_max + margin)
     ax1.set_ylim(y_min - margin, y_max + margin)
 
@@ -71,10 +71,10 @@ def plot_trajectory_parametric(
     ax2.scatter(x[stopped_index],y[stopped_index],c="purple",s=100,marker="s",label="Stopped",zorder=5,)
     ax2.scatter(x0, y0, c="green", s=80, label="Start", zorder=5)
 
-    ax2.set_xlabel("x")
-    ax2.set_ylabel("y")
-    ax2.set_title("Return Journey")
-    ax2.legend(loc="best")
+    ax2.set_xlabel("x",fontsize=14)
+    ax2.set_ylabel("y",fontsize=14)
+    ax2.set_title("Return Journey",fontsize=15)
+    ax2.legend(loc="best",fontsize=12)
     ax2.grid(True, alpha=0.3)
     ax2.set_aspect('equal', adjustable='box')
     
