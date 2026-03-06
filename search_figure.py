@@ -58,6 +58,7 @@ def run_forward_phase(params, state, xT, yT):
     y_init = state[1]
 
     while t < params.T:
+        params.SOLVE_IVP_COUNTER += 1
         # Solve system of ODEs over a small time span with the current state and parameters
         sol = solve_ivp(
             forward_odes,
@@ -81,18 +82,35 @@ def run_forward_phase(params, state, xT, yT):
         state = sol.y[:, -1]
         t = sol.t[-1]
 
-        # Get difference between energy margin that would remain after returning and epsilon
-        margin_minus_eps = check_energy_turn(
-            t, state, params.E_MAX, params.EPS, params.TS, params.TR, params.M, params.EH, params.ES, params.X0, params.Y0, e_turn_tracker, e_used_tracker
-        )
-        e_turn_times.append(t)
+        # Check how far we are from origin
+        origin_dist = np.sqrt((state[0] - params.X0) ** 2 + (state[1] - params.Y0) ** 2)
+        if (params.R_MAX != 0):
+            # If this is not the first linear search, just check radius
+            origin_dist = np.sqrt((state[0] - params.X0) ** 2 + (state[1] - params.Y0) ** 2)
+            # Check if we have hit the energy boundary
+            if (origin_dist >= params.R_MAX):
+                print("Turning around just before there is insufficient energy to return")
+                turned = True
+                turn_index = len(trajectory) - 1
+                e_used_tracker.append(state[4])
+                break
 
-        # If negative or zero, margin is less than or equal to epsilon, so need to return
-        if margin_minus_eps <= 0:
-            print("Turning around just before there is insufficient energy to return")
-            turned = True
-            turn_index = len(trajectory) - 1
-            break
+        else:
+            # If it is the first linear search, need to do energy checks
+            params.SOLVE_IVP_COUNTER += 2
+            # Get difference between energy margin that would remain after returning and epsilon
+            margin_minus_eps = check_energy_turn(
+                t, state, params.E_MAX, params.EPS, params.TS, params.TR, params.M, params.EH, params.ES, params.X0, params.Y0, e_turn_tracker, e_used_tracker
+            )
+            e_turn_times.append(t)
+
+            # If negative or zero, margin is less than or equal to epsilon, so need to return
+            if margin_minus_eps <= 0:
+                print("Turning around just before there is insufficient energy to return")
+                turned = True
+                turn_index = len(trajectory) - 1
+                params.R_MAX = origin_dist
+                break
 
     return times, trajectory, e_used_tracker, e_turn_tracker, e_turn_times, turned, turn_index
 
@@ -103,6 +121,7 @@ def run_stop_phase(turn_state, params):
     # energy as parameters
     params_stop = [turn_state[2], turn_state[3], params.TS, params.M, params.EH]
     # Come to a stop
+    params.SOLVE_IVP_COUNTER += 1
     return solve_ivp(
         stop_odes,
         (0, params.TS),
@@ -121,6 +140,7 @@ def run_return_phase(stopped_state, params):
     # time, mass, and hovering energy as parameters
     params_return = [stopped_state[0], stopped_state[1], params.X0, params.Y0, params.TR, params.M, params.EH]
     # Return to initial point
+    params.SOLVE_IVP_COUNTER += 1
     return solve_ivp(
         forward_odes,
         (0, params.TR),

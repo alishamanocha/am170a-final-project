@@ -21,6 +21,9 @@ class Parameters:
     DT: float
     EPS: float # Threshold used to determine if the drone should return midway (if energy margin < eps)
 
+    SOLVE_IVP_COUNTER: int
+    R_MAX: float # Maximum radius to energy circumference, determined from first linear search
+
     # Time to come to a stop when turning midway
     @property
     def TS(self):

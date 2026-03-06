@@ -11,7 +11,6 @@ Author: Alisha Manocha, Reagan Ross, Aydin Khan, Roberto Julian Campos, Kamran H
 import numpy as np
 from scipy.integrate import solve_ivp
 
-
 def forward_odes(t, state, params):
     """
     This is the existing model for moving with a quadratic velocity from a starting point to an

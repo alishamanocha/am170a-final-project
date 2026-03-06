@@ -62,6 +62,8 @@ def main():
         E_MAX = 35.0,
         DT = 1e-3,
         EPS = 5e-2,
+        SOLVE_IVP_COUNTER=0,
+        R_MAX = 0,
     )
     #for reference for a point, with our current drone parameters, our maximum travel distance is around 3.2
     #math.sqrt((params.XL - params.x0)**2+(params.YL-params.X0)**2)
@@ -70,6 +72,8 @@ def main():
     print("Running our search algorithm")
     all_results = adaptive_model(params, rad_search=params.R_SCAN, max_dist_rad = None, point_list = None, max_arclength= None)
     print("Finished our Search Algorithm")
+    
+    print("solve ivp counter: ", params.SOLVE_IVP_COUNTER)
 
     # Stitch together full trajectory
     full_times = []
