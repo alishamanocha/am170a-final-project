@@ -140,6 +140,15 @@ def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
 
     COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#9467bd', '#FF77FF']
     BLUE = '#4a90d9'
+    FLIGHT_LABELS = ['1st flight', '2nd flight', '3rd flight', '4th flight', '5th flight']
+    # I'm just hardcoding this
+    LABEL_POSITIONS = [
+        (2.55, 0,   'left',   'center'),   # 1st flight - right end
+        (-2.55, 0,  'right',  'center'),   # 2nd flight - left end
+        (0.0,  2.55,  'center', 'bottom'),   # 3rd flight - top
+        (0.0,  -2.55, 'center', 'top'),      # 4th flight - bottom
+        (1.8, 1.8,  'left',   'bottom'),   # 5th flight - diagonal tip
+    ]
 
     for i, (x_traj, y_traj, scan_stops, reach) in enumerate(results):
         color = COLORS[i % len(COLORS)]
@@ -155,66 +164,71 @@ def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
             )
             ax.add_patch(circle)
             ax.scatter(sx, sy, color=color, s=14, zorder=4)
-            
+        
+        lx, ly, ha, va = LABEL_POSITIONS[i]
+        ax.text(lx, ly, FLIGHT_LABELS[i],
+                color=color, fontsize=11, fontweight='bold',
+                ha=ha, va=va, zorder=7)
+
     # Center point
     ax.scatter(X0, Y0, color='black', s=30, zorder=6, marker='o')
-    ax.annotate('Center', (X0, Y0),
-                textcoords='offset points', xytext=(6, -16),
-                fontsize=9, color='black')
+    # ax.annotate('Center', (X0, Y0),
+    #             textcoords='offset points', xytext=(6, -16),
+    #             fontsize=11, color='black')
 
     # Target point
     XT, YT = -1.2, 1.2
     ax.scatter(XT, YT, color='red', s=30, zorder=6, marker='o')
     ax.annotate('Target', (XT, YT),
-                textcoords='offset points', xytext=(6, -16),
-                fontsize=9, color='red')
+                 textcoords='offset points', xytext=(6, -16),
+                 fontsize=12, color='red')
     
-    # Annotate R_LIDAR on the first scan stop of Vector 1 (if exists)
+    # Annotate R_LIDAR on the third scan stop of Vector 1 (if exists)
     if results[0][2]:
-        first_x, first_y = results[0][2][0]
+        first_x, first_y = results[0][2][3]
         ax.annotate(
             '', xy=(first_x + R_LIDAR, first_y), xytext=(first_x, first_y),
             arrowprops=dict(arrowstyle='<->', color='gray', lw=1.2)
         )
         ax.text(first_x + R_LIDAR / 2 + 0.08, first_y + 0.12,
-                r'$r_{\mathrm{scan}}$', ha='center', fontsize=12, color='black')
+                r'$r_{\mathrm{scan}}$', ha='center', fontsize=13, color='black')
         
-    # Annotate R_max
+    angle = np.radians(225)
     ax.annotate(
-        '', xy=(avg_reach, 0), xytext=(X0, Y0),
-        arrowprops=dict(arrowstyle='<->', color='#555555', lw=1.2, linestyle='dashed')
+        '', xy=(avg_reach * np.cos(angle), avg_reach * np.sin(angle)),
+        xytext=(X0, Y0),
+        arrowprops=dict(arrowstyle='->', color='#555555', lw=1.2, linestyle='dashed')
     )
-    ax.text(avg_reach / 2, -0.22,
-            r'$R_{\mathrm{max}}$', ha='center', fontsize=12, color='black')
+    perp_angle = angle + np.radians(90)
+    mid_x = avg_reach * np.cos(angle) * 0.55 + 0.3 * np.cos(perp_angle)
+    mid_y = avg_reach * np.sin(angle) * 0.55 + 0.3 * np.sin(perp_angle)
+    ax.text(mid_x, mid_y, r'$R_{\mathrm{max}}$',
+            ha='center', fontsize=12, color='#555555')
     
     # Legend
     legend_handles = [
-        Line2D([0], [0], color=COLORS[0], lw=2),
-        Line2D([0], [0], color=COLORS[1], lw=2),
-        Line2D([0], [0], color=COLORS[2], lw=2),
-        Line2D([0], [0], color=COLORS[3], lw=2),
-        Line2D([0], [0], color=COLORS[4], lw=2),
-        patches.Patch(facecolor=BLUE, alpha=0.35, edgecolor=BLUE),
+        Line2D([0], [0], marker='o', color='gray', markersize=14,
+               linestyle='None', markerfacecolor='gray', alpha=0.2,
+               markeredgecolor='gray'),
         Line2D([0], [0], color='#888888', lw=1.5, linestyle='--'),
         Line2D([0], [0], marker='o', color='black', markersize=5,
                linestyle='None', markerfacecolor='black'),
-        Line2D([0], [0], marker='o', color='red', markersize=5,
-               linestyle='None', markerfacecolor='red'),
+        # Line2D([0], [0], marker='o', color='red', markersize=5,
+        #        linestyle='None', markerfacecolor='red'),
     ]
     legend_labels = [
-        '1st flight', '2nd flight', '3rd flight', '4th flight', '5th flight',
-        'Scan area', 'Max energy boundary', 'Center', 'Target',
+        'Scan area', 'Max energy boundary', 'Center',
     ]
-    ax.legend(legend_handles, legend_labels, loc='upper right', fontsize=7, framealpha=0.92)
+    ax.legend(legend_handles, legend_labels, loc='upper right', fontsize=12, framealpha=0.92)
 
-    ax.set_xlim(-3.2, 3.2)
-    ax.set_ylim(-3.2, 3.2)
+    ax.set_xlim(-3.45, 3.45)
+    ax.set_ylim(-3.45, 3.45)
     ax.set_aspect('equal')
-    ax.set_xlabel('x (m)', fontsize=12)
-    ax.set_ylabel('y (m)', fontsize=12)
+    ax.set_xlabel('x (m)', fontsize=14)
+    ax.set_ylabel('y (m)', fontsize=14)
     ax.set_title(
         'Drone Trajectories with Scanning',
-        fontsize=13
+        fontsize=15
     )
     ax.grid(True, alpha=0.3, color='lightgray')
     ax.tick_params(labelsize=10)
