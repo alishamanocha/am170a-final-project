@@ -61,7 +61,7 @@ def build_coverage_grid(
     scan_centers: np.ndarray,
     scan_radius: float,
     max_radius: float,
-    grid_resolution: int = 4800,
+    grid_resolution: int = 1200,
 ) -> tuple:
     """
     For every point on a fine 2D Cartesian grid, count how many scan circles
@@ -71,7 +71,7 @@ def build_coverage_grid(
         xx, yy -- meshgrid arrays (grid_resolution × grid_resolution)
         counts -- integer array of the same shape, NaN outside max_radius
     """
-    
+
     # Build a square grid that covers the search circle
     lin = np.linspace(-max_radius, max_radius, grid_resolution)
     xx, yy = np.meshgrid(lin, lin)
@@ -109,7 +109,7 @@ def plot_coverage_heatmap(
     params,
     max_dist_rad: float,
     savepath: str = "coverage_heatmap.png",
-    grid_resolution: int = 4800,
+    grid_resolution: int = 1200,
 ) -> None:
     """
     Build and save the coverage density heatmap.
@@ -154,7 +154,7 @@ def plot_coverage_heatmap(
     # ------------------------------------------------------------------
     # Figure
     # ------------------------------------------------------------------
-    fig, ax = plt.subplots(figsize=(8, 8), dpi=200)
+    fig, ax = plt.subplots(figsize=(11, 8), dpi=200)
     ax.set_facecolor("white")
     fig.patch.set_facecolor("white")
 
@@ -231,7 +231,16 @@ def plot_coverage_heatmap(
         f"$R_{{\\mathrm{{max}}}}$={max_dist_rad:.2f} m)",
         fontsize=12,
     )
-    ax.legend(loc="upper right", fontsize=9, framealpha=0.9)
+    ax.legend(
+        loc="upper left",
+        bbox_to_anchor=(1.22, 1.0),
+        fontsize=11,
+        framealpha=0.95,
+        borderpad=1.0,
+        labelspacing=1.0,
+        handletextpad=0.8,
+    )
+
     ax.grid(False)
 
     plt.tight_layout()
@@ -261,11 +270,13 @@ def main():
         E_MAX=35.0,
         DT=1e-3,
         EPS=5e-2,
+        SOLVE_IVP_COUNTER=0,
+        R_MAX=0,
     )
 
     all_results = adaptive_model(
         params,
-        rad_search=params.R_SCAN,
+        rad_search=params.R_SCAN*0.5, # change 0.5 value to change tolerance
         max_dist_rad=None,
         point_list=None,
         max_arclength=None,
@@ -287,7 +298,7 @@ def main():
         params=params,
         max_dist_rad=max_dist_rad,
         savepath=str(PLOTS_DIR / "coverage_heatmap.png"),
-        grid_resolution=4800,
+        grid_resolution=1200,
     )
 
 
