@@ -231,15 +231,7 @@ def plot_coverage_heatmap(
         f"$R_{{\\mathrm{{max}}}}$={max_dist_rad:.2f} m)",
         fontsize=12,
     )
-    ax.legend(
-        loc="upper left",
-        bbox_to_anchor=(1.22, 1.0),
-        fontsize=11,
-        framealpha=0.95,
-        borderpad=1.0,
-        labelspacing=1.0,
-        handletextpad=0.8,
-    )
+    ax.legend(loc="upper right", fontsize=14, framealpha=0.9)
 
     ax.grid(False)
 
