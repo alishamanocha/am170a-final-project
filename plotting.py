@@ -12,6 +12,39 @@ import matplotlib.patches as patches
 import numpy as np
 from typing import Optional
 
+def plot_flight_time_vs_energy(
+    E_H: float,
+    m: float,
+    savepath: str = "plots/flight_time_vs_energy"
+):
+    distances = [0.5, 1.0, 2.0, 3.0]
+    colors = ['#2196F3', '#4CAF50', '#FF9800', '#E91E63']
+
+    T = np.linspace(0.05, 6, 1000)
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+
+    for d, color in zip(distances, colors):
+        e_forward = E_H * T + (9 * m / (4 * T**2)) * d**2
+        T_opt = (9 * m * d**2 / (2 * E_H)) ** (1/3)
+        e_opt = E_H * T_opt + (9 * m / (4 * T_opt**2)) * d**2
+        
+        ax.plot(T, e_forward, color=color, linewidth=2, label=f'$d = {d}$')
+        ax.plot(T_opt, e_opt, 'o', color=color, markersize=7, zorder=5)
+        ax.axvline(T_opt, color=color, linestyle='--', linewidth=0.8, alpha=0.5)
+
+    ax.set_xlabel('Flight time $T$', fontsize=13)
+    ax.set_ylabel('Forward flight energy $e(T)$', fontsize=13)
+    ax.set_title('Forward Flight Energy vs. Flight Time for Varying Distances\n($E_H = 1$, $m = 1$)', fontsize=13)
+    ax.legend(fontsize=11, title='Distance $d$', title_fontsize=11)
+    ax.set_ylim(0, 20)
+    ax.set_xlim(0, 6)
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(savepath, dpi=150, bbox_inches='tight')
+    plt.close()
+
 
 def plot_linear_search_area(
     *,
