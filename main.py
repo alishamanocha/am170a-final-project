@@ -41,13 +41,16 @@ PLOTS_DIR = SCRIPT_DIR / "plots"
 # -----------------------------------------------------------------------------
 X0, Y0 = 0.0, 0.0  # Start
 XT, YT = 1.0, 2.0  # Target
-T = 1.0  # Flight time (start ↔ target)
 M = 1.0  # Drone mass
 EH = 1.0  # Hovering energy
-E_MAX = 17  # Max energy budget
-TS = T / 20  # Time to come to stop when turning midway
+E_MAX = 6  # Max energy budget
+TS = 0.4  # Minimum physically feasible stopping time
 EPS = 5e-2  # Threshold used to determine if the drone should return midway (if energy margin < eps)
-DT = T / 1000  # Time interval at which to check if drone should return
+
+# Compute optimal flight time T* from distance to target
+dist_forward = np.sqrt((XT - X0)**2 + (YT - Y0)**2)
+T = (9 * M / (2 * EH)) ** (1/3) * dist_forward ** (2/3)
+DT = T / 1000  # Time interval at which to check energy constraint
 
 
 def run_forward_phase(params, state, e_max, eps, ts):
@@ -97,7 +100,7 @@ def run_forward_phase(params, state, e_max, eps, ts):
 
         # Get difference between energy margin that would remain after returning and epsilon
         margin_minus_eps = check_turn(
-            t, state, e_max, eps, ts, T, m, EH, x0, y0, e_turn_tracker, e_used_tracker
+            t, state, e_max, eps, ts, m, EH, x0, y0, e_turn_tracker, e_used_tracker
         )
         e_turn_times = np.append(e_turn_times, t)
 
@@ -131,21 +134,24 @@ def run_stop_phase(turn_state, ts, m, EH):
 
 def run_return_phase(stopped_state, x0, y0, T, m, EH):
     """Integrate return from stopped state to (x0, y0). Returns solution."""
-    # Pass in stopped position as initial position, initial starting point as ending position, flight
-    # time, mass, and hovering energy as parameters
-    params_return = [stopped_state[0], stopped_state[1], x0, y0, T, m, EH]
+    # Compute optimal return time from current stopped position
+    dist_return = np.sqrt((x0 - stopped_state[0])**2 + (y0 - stopped_state[1])**2)
+    t_r_star = (9 * m / (2 * EH)) ** (1/3) * dist_return ** (2/3)
+
+    # Pass in stopped position as initial position, initial starting point as ending position, optimal return time,
+    # mass, and hovering energy as parameters
+    params_return = [stopped_state[0], stopped_state[1], x0, y0, t_r_star, m, EH]
     # Return to initial point
     return solve_ivp(
         forward_odes,
-        (0, T),
+        (0, t_r_star),
         stopped_state,
         args=(params_return,),
         method="RK45",
-        max_step=T / 200,
+        max_step=t_r_star / 200,
         rtol=1e-8,
         atol=1e-10,
-    )
-
+    ), t_r_star
 
 def main():
     params = [X0, Y0, XT, YT, T, M, EH]
@@ -176,7 +182,7 @@ def main():
     stopped_state = trajectory[stopped_index]
     print("Stopped state:", stopped_state)
 
-    sol_return = run_return_phase(stopped_state, X0, Y0, T, M, EH)
+    sol_return, t_r_star = run_return_phase(stopped_state, X0, Y0, T, M, EH)
     print("Ending state:", sol_return.y[:, -1])
 
     # Add all times and state arrays into trajectory tracker, offsetting the times because we
@@ -198,10 +204,14 @@ def main():
     speed = np.hypot(trajectory[:, 2], trajectory[:, 3]) # Speed = |v| = sqrt(vx^2 + vy^2)
     e = trajectory[:, 4]
 
+    print("T*: ", T)
+    print("t_r*: ", t_r_star)
+
     # ---- Plotting ----
     PLOTS_DIR.mkdir(parents=True, exist_ok=True)
     plot_trajectory_parametric(
         x, y, X0, Y0, XT, YT, turn_index, stopped_index, turned,
+        E_MAX, T, t_r_star, EH, M,
         savepath=str(PLOTS_DIR / "parametric_trajectory.png"),
     )
     plot_position_and_speed_vs_time(

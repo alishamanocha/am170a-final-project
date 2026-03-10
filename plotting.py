@@ -11,7 +11,7 @@ import numpy as np
 
 
 def plot_trajectory_parametric(
-    x, y, x0, y0, xT, yT, turn_index, stopped_index, turned, savepath="parametric_trajectory.png"
+    x, y, x0, y0, xT, yT, turn_index, stopped_index, turned, E_MAX, T, t_r_star, EH, M, savepath="parametric_trajectory.png"
 ):
     """
     Plot parametric solution of x(t) vs. y(t) split into forward and return phases.
@@ -32,13 +32,13 @@ def plot_trajectory_parametric(
         None
     """
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), dpi=300)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 6), dpi=300)
 
     # Left subplot (forward journey)
     if turned:
         ax1.plot(x[: turn_index + 1],y[: turn_index + 1],lw=2.5, label="Forward", color="tab:blue")
-        ax1.plot(x[turn_index : stopped_index + 1],y[turn_index : stopped_index + 1],"--",lw=2,label="Stopping", color="tab:orange")
-        ax1.scatter(x[turn_index],y[turn_index],c="orange",s=50,marker="x",label="Turn decision",zorder=5,)
+        ax1.plot(x[turn_index : stopped_index + 1],y[turn_index : stopped_index + 1],":",lw=3,label="Stopping", color="gray")
+        ax1.scatter(x[turn_index],y[turn_index],c="orange",s=100,marker="x",lw=2,label="Turn decision",zorder=5,)
         ax1.scatter(x[stopped_index],y[stopped_index],c="purple",s=100,marker="s",label="Stopped",zorder=5,)
     else:
         ax1.plot(x[: stopped_index + 1], y[: stopped_index + 1], lw=2.5, label="Forward")
@@ -94,8 +94,7 @@ def plot_trajectory_parametric(
     plt.tight_layout()
     plt.savefig(savepath)
     plt.close()
-
-
+    
 
 def plot_position_vs_time(times, x, y, turn_index, stopped_index, turned, savepath="position_vs_time.png"):
     """
