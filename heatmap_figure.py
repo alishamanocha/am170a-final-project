@@ -25,6 +25,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.lines import Line2D
 
 from params import Parameters
 from adaptive_bisection import adaptive_model
@@ -173,7 +174,7 @@ def plot_coverage_heatmap(
 
     # Colorbar
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label("Number of overlapping scan circles", fontsize=11)
+    cbar.set_label("Number of overlapping scan circles", fontsize=15)
 
     # Search boundary circle
     boundary = patches.Circle(
@@ -184,7 +185,7 @@ def plot_coverage_heatmap(
         linestyle="--",
         linewidth=1.8,
         zorder=5,
-        label=f"Max search radius ({max_dist_rad:.2f} m)",
+        label=f"Max search radius ({max_dist_rad:.2f})",
     )
     ax.add_patch(boundary)
 
@@ -195,11 +196,10 @@ def plot_coverage_heatmap(
             scan_centers[:, 1],
             s=6,
             c="white",
-            edgecolors="gray",
+            edgecolors="dimgray",
             linewidths=0.3,
             alpha=0.55,
             zorder=6,
-            label=f"Scan centers (n={len(scan_centers)})",
         )
 
     # Origin marker
@@ -222,17 +222,27 @@ def plot_coverage_heatmap(
     ax.set_xlim(-max_dist_rad * 1.12, max_dist_rad * 1.12)
     ax.set_ylim(-max_dist_rad * 1.12, max_dist_rad * 1.12)
     ax.set_aspect("equal")
-    ax.set_xlabel("x (m)", fontsize=12)
-    ax.set_ylabel("y (m)", fontsize=12)
+    ax.set_xlabel("x", fontsize=15)
+    ax.set_ylabel("y", fontsize=15)
     ax.set_title(
         "Coverage Density Heatmap: Angular Bisection\n"
         f"(n={len(scan_centers)} scans, "
-        f"$r_{{\\mathrm{{scan}}}}$={params.R_SCAN} m, "
-        f"$R_{{\\mathrm{{max}}}}$={max_dist_rad:.2f} m)",
-        fontsize=12,
+        f"$r_{{\\mathrm{{scan}}}}$={params.R_SCAN}, "
+        f"$R_{{\\mathrm{{max}}}}$={max_dist_rad:.2f})",
+        fontsize=17,
     )
-    ax.legend(loc="upper right", fontsize=14, framealpha=0.9)
-
+    # Build legend manually so scan center marker can be bigger than on the plot
+    scan_handle = Line2D(
+        [0], [0],
+        marker="o", color="w",
+        markerfacecolor="white",
+        markeredgecolor="dimgray",
+        markeredgewidth=1.2,
+        markersize=10,
+        label=f"Scan centers (n={len(scan_centers)})",
+    )
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles=handles + [scan_handle], loc="upper center", bbox_to_anchor=(0.5, -0.08), fontsize=15, framealpha=0.9)
     ax.grid(False)
 
     plt.tight_layout()
@@ -252,8 +262,8 @@ def main():
     params = Parameters(
         X0=0.0,
         Y0=0.0,
-        XL=999.0,
-        YL=999.0,
+        XL=999.9,
+        YL=999.9,
         R_SCAN=0.25,
         T=1.0,
         M=1.0,
