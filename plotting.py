@@ -31,7 +31,7 @@ def plot_flight_time_vs_energy(
         
         ax.plot(T, e_forward, color=color, linewidth=2, label=f'$d = {d}$')
         ax.plot(T_opt, e_opt, 'o', color=color, markersize=7, zorder=5)
-        ax.axvline(T_opt, color=color, linestyle='--', linewidth=0.8, alpha=0.5)
+        ax.axvline(T_opt, color=color, linestyle='--', linewidth=1.2)
 
     ax.set_xlabel('Flight time $T$', fontsize=13)
     ax.set_ylabel('Forward flight energy $e(T)$', fontsize=13)
@@ -630,6 +630,11 @@ def plot_energy_remaining_vs_time(
             label_turn = "Return" if i == 0 else None
             # label_stop = "Stopped" if i == 0 else None
             plt.axvline(times[turn_idx], color="orange", ls="--", lw=2, label=label_turn)
+
+            is_last = (i == len(segment_indices) - 1)
+            if is_last:
+                plt.scatter(times[turn_idx], e_remaining[turn_idx], 
+                marker="*", color="red", s=200, zorder=5, label="Target found")
             # plt.axvline(times[stopped_idx], color="purple", ls=":", lw=2, label=label_stop)
             if charge_idx is not None:
                 plt.annotate(
@@ -646,7 +651,7 @@ def plot_energy_remaining_vs_time(
 
     plt.xlabel("Time")
     plt.ylabel("Energy remaining")
-    plt.title("Energy remaining vs. time")
+    plt.title("Energy Remaining During Search")
 
     handles, labels = plt.gca().get_legend_handles_labels()
     handles.append(green_arrow)
@@ -655,7 +660,7 @@ def plot_energy_remaining_vs_time(
     if segment_indices is not None:
         order.extend([
             "Return",
-            # "Stopped",
+            "Target found",
             "Recharge"
         ])
     reordered = [(h, l) for l in order for h, lab in zip(handles, labels) if lab == l]

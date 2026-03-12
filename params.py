@@ -11,7 +11,6 @@ class Parameters:
     YL: float
 
     R_SCAN: float # Radius of the "scanner"
-    T: float # Flight time from any stopped position to next target
 
     M: float # Drone mass
     EH: float # Hovering energy per second
@@ -24,12 +23,12 @@ class Parameters:
     SOLVE_IVP_COUNTER: int
     R_MAX: float # Maximum radius to energy circumference, determined from first linear search
 
+    # Flight time from any stopped position to next target
+    @property
+    def T(self):
+        return (9 * self.M / (2 * self.EH)) ** (1/3) * self.R_SCAN ** (2/3)
+
     # Time to come to a stop when turning midway
     @property
     def TS(self):
         return self.T / 20
-
-    # Time to return back to the charging station
-    @property
-    def TR(self):
-        return self.T * 5

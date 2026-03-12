@@ -100,7 +100,7 @@ def run_forward_phase(params, state, xT, yT):
             params.SOLVE_IVP_COUNTER += 2
             # Get difference between energy margin that would remain after returning and epsilon
             margin_minus_eps = check_energy_turn(
-                t, state, params.E_MAX, params.EPS, params.TS, params.TR, params.M, params.EH, params.ES, params.X0, params.Y0, e_turn_tracker, e_used_tracker
+                t, state, params.E_MAX, params.EPS, params.TS, params.M, params.EH, params.ES, params.X0, params.Y0, e_turn_tracker, e_used_tracker
             )
             e_turn_times.append(t)
 
@@ -136,18 +136,22 @@ def run_stop_phase(turn_state, params):
 
 def run_return_phase(stopped_state, params):
     """Integrate return from stopped state to (x0, y0). Returns solution."""
+    # Compute the distance to the starting point
+    dist_return = np.sqrt((params.X0 - stopped_state[0])**2 + (params.Y0 - stopped_state[1])**2)
+    # Compute the optimal return time
+    t_r_star = (9 * params.M / (2 * params.EH)) ** (1/3) * dist_return ** (2/3)
     # Pass in stopped position as initial position, initial starting point as ending position, flight
     # time, mass, and hovering energy as parameters
-    params_return = [stopped_state[0], stopped_state[1], params.X0, params.Y0, params.TR, params.M, params.EH]
+    params_return = [stopped_state[0], stopped_state[1], params.X0, params.Y0, t_r_star, params.M, params.EH]
     # Return to initial point
     params.SOLVE_IVP_COUNTER += 1
     return solve_ivp(
         forward_odes,
-        (0, params.TR),
+        (0, t_r_star),
         stopped_state,
         args=(params_return,),
         method="RK45",
-        max_step=params.TR / 200,
+        max_step=t_r_star / 200,
         rtol=1e-8,
         atol=1e-10,
     )
@@ -179,8 +183,8 @@ def simulate_search_vector(angle, params):
     located = False
 
     # Place first target 2 * radius of LIDAR scan circle away from initial position
-    xT = params.X0 + 2 * params.R_SCAN * direction[0]
-    yT = params.Y0 + 2 * params.R_SCAN * direction[1]
+    xT = params.X0 + params.R_SCAN * direction[0]
+    yT = params.Y0 + params.R_SCAN * direction[1]
 
     while True:
         # Travel to the next target
@@ -229,8 +233,8 @@ def simulate_search_vector(angle, params):
                 break
 
             # Didn't find target, generate new target
-            xT = state[0] + 2 * params.R_SCAN * direction[0]
-            yT = state[1] + 2 * params.R_SCAN * direction[1]
+            xT = state[0] + params.R_SCAN * direction[0]
+            yT = state[1] + params.R_SCAN * direction[1]
     
     # ---- Return phase ----
     stopped_index = len(full_trajectory) - 1
