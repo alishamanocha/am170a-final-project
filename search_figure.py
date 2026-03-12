@@ -108,7 +108,7 @@ def simulate_search_vector(angle_deg):
         cum_dist[i] = cum_dist[i-1] + np.hypot(x_traj[i] - x_traj[i-1], y_traj[i] - y_traj[i-1] )
         
     max_dist = cum_dist[-1]
-    stop_distances = np.arange(R_LIDAR, max_dist, 2 * R_LIDAR)
+    stop_distances = np.arange(R_LIDAR, max_dist, R_LIDAR)
 
     scan_stops = []
     for d in stop_distances:
