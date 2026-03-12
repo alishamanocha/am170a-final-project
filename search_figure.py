@@ -147,23 +147,56 @@ def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
         (-2.55, 0,  'right',  'center'),   # 2nd flight - left end
         (0.0,  2.55,  'center', 'bottom'),   # 3rd flight - top
         (0.0,  -2.55, 'center', 'top'),      # 4th flight - bottom
-        (1.8, 1.8,  'left',   'bottom'),   # 5th flight - diagonal tip
+        (0.8, 1.4,  'left',   'bottom'),   # 5th flight - diagonal tip
     ]
+
+    # Target point
+    XT, YT = 1.2, 1
+    ax.scatter(XT, YT, color='red', s=30, zorder=6, marker='o')
+    ax.annotate('Target', (XT, YT),
+                 textcoords='offset points', xytext=(6, -16),
+                 fontsize=12, color='red')
 
     for i, (x_traj, y_traj, scan_stops, reach) in enumerate(results):
         color = COLORS[i % len(COLORS)]
         # Flight path colored per vector
-        ax.plot(x_traj, y_traj, color=color, lw=1.8, alpha=0.85, zorder=2)
+        if i == 4:
+            detecting_idx = None
+            for k, (sx, sy) in enumerate(scan_stops):
+                if np.sqrt((sx - XT)**2 + (sy - YT)**2) <= R_LIDAR:
+                    detecting_idx = k
+                    break
+            if detecting_idx is not None:
+                stop_x, stop_y = scan_stops[detecting_idx]
+                traj_arr = np.array(list(zip(x_traj, y_traj)))
+                dists = np.sqrt((traj_arr[:,0] - stop_x)**2 + (traj_arr[:,1] - stop_y)**2)
+                trim_idx = np.argmin(dists)
+                ax.plot(x_traj[:trim_idx+1], y_traj[:trim_idx+1], color=color, lw=1.8, alpha=0.85, zorder=2)
+            else:
+                ax.plot(x_traj, y_traj, color=color, lw=1.8, alpha=0.85, zorder=2)
+        else:
+            ax.plot(x_traj, y_traj, color=color, lw=1.8, alpha=0.85, zorder=2)
 
         # Scan circles same color as flight path
-        for (sx, sy) in scan_stops:
-            circle = patches.Circle(
-                (sx, sy), R_LIDAR,
-                edgecolor=color, facecolor=color,
-                alpha=0.18, linewidth=1.0, zorder=3
-            )
-            ax.add_patch(circle)
-            ax.scatter(sx, sy, color=color, s=14, zorder=4)
+        for k, (sx, sy) in enumerate(scan_stops):
+            if i == 4:  # 5th flight: only draw up to detecting circle
+                circle = patches.Circle(
+                    (sx, sy), R_LIDAR,
+                    edgecolor=color, facecolor=color,
+                    alpha=0.18, linewidth=1.0, zorder=3
+                )
+                ax.add_patch(circle)
+                ax.scatter(sx, sy, color=color, s=14, zorder=4)
+                if np.sqrt((sx - XT)**2 + (sy - YT)**2) <= R_LIDAR:
+                    break
+            else:
+                circle = patches.Circle(
+                    (sx, sy), R_LIDAR,
+                    edgecolor=color, facecolor=color,
+                    alpha=0.18, linewidth=1.0, zorder=3
+                )
+                ax.add_patch(circle)
+                ax.scatter(sx, sy, color=color, s=14, zorder=4)
         
         lx, ly, ha, va = LABEL_POSITIONS[i]
         ax.text(lx, ly, FLIGHT_LABELS[i],
@@ -175,23 +208,6 @@ def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
     # ax.annotate('Center', (X0, Y0),
     #             textcoords='offset points', xytext=(6, -16),
     #             fontsize=11, color='black')
-
-    # Target point
-    XT, YT = -1.2, 1.2
-    ax.scatter(XT, YT, color='red', s=30, zorder=6, marker='o')
-    ax.annotate('Target', (XT, YT),
-                 textcoords='offset points', xytext=(6, -16),
-                 fontsize=12, color='red')
-    
-    # Annotate R_LIDAR on the third scan stop of Vector 1 (if exists)
-    if results[0][2]:
-        first_x, first_y = results[0][2][3]
-        ax.annotate(
-            '', xy=(first_x + R_LIDAR, first_y), xytext=(first_x, first_y),
-            arrowprops=dict(arrowstyle='<->', color='gray', lw=1.2)
-        )
-        ax.text(first_x + R_LIDAR / 2 + 0.08, first_y + 0.12,
-                r'$r_{\mathrm{scan}}$', ha='center', fontsize=13, color='black')
         
     angle = np.radians(225)
     ax.annotate(
@@ -217,7 +233,7 @@ def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
         #        linestyle='None', markerfacecolor='red'),
     ]
     legend_labels = [
-        'Scan area', 'Max energy boundary', 'Center',
+        'Scan area', 'Max energy boundary', r'Charging station $\mathbf{x}_0$',
     ]
     ax.legend(legend_handles, legend_labels, loc='upper right', fontsize=12, framealpha=0.92)
 
@@ -227,7 +243,7 @@ def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
     ax.set_xlabel('x (m)', fontsize=14)
     ax.set_ylabel('y (m)', fontsize=14)
     ax.set_title(
-        'Drone Trajectories with Scanning',
+        'Radial Division Search Pattern',
         fontsize=15
     )
     ax.grid(True, alpha=0.3, color='lightgray')
