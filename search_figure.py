@@ -240,8 +240,8 @@ def plot_search_pattern(results, savepath="search_pattern_simulated.png"):
     ax.set_xlim(-3.45, 3.45)
     ax.set_ylim(-3.45, 3.45)
     ax.set_aspect('equal')
-    ax.set_xlabel('x (m)', fontsize=14)
-    ax.set_ylabel('y (m)', fontsize=14)
+    ax.set_xlabel('x', fontsize=14)
+    ax.set_ylabel('y', fontsize=14)
     ax.set_title(
         'Radial Division Search Pattern',
         fontsize=15
