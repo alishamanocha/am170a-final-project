@@ -205,16 +205,24 @@ def simulate_search_vector(angle, params):
         # Need to turn back
         if turned:
             turn_index = len(full_trajectory)-1
-            # Get the state at the point of deciding to return
             turn_state = full_trajectory[-1]
             sol_stop = run_stop_phase(turn_state, params)
 
-            # Add all times and state arrays into trajectory tracker, offsetting the times because
-            # we simulated from time 0 rather than the actual current time
             t_offset = full_times[-1]
             for i in range(1, sol_stop.y.shape[1]):
                 full_trajectory.append(sol_stop.y[:, i])
                 full_times.append(t_offset + sol_stop.t[i])
+
+            # Add final scan at R_max along the search direction
+            x_final = np.array([params.X0 + params.R_MAX * direction[0],
+                                 params.Y0 + params.R_MAX * direction[1]])
+            scan_indices.append(len(full_trajectory)-1)
+            dist_final = np.sqrt((x_final[0] - params.XL)**2 + (x_final[1] - params.YL)**2)
+            if dist_final < params.R_SCAN:
+                located = True
+                turned = True
+                turn_index = len(full_trajectory) - 1
+
             break
         else:
             print(f"Reached target! Now scanning! At position ({state[0], state[1]}), velocity ({state[2], state[3]}), energy used {state[4]}")

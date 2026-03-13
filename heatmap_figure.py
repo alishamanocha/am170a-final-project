@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.lines import Line2D
+from scipy.spatial import cKDTree
 
 from params import Parameters
 from adaptive_bisection import adaptive_model
@@ -58,48 +59,65 @@ def extract_scan_centers(all_results: list, params) -> np.ndarray:
     return np.array(centers, dtype=float) # shape (M, 2)
 
 
-def build_coverage_grid(
-    scan_centers: np.ndarray,
-    scan_radius: float,
-    max_radius: float,
-    grid_resolution: int = 1200,
-) -> tuple:
-    """
-    For every point on a fine 2D Cartesian grid, count how many scan circles
-    (each of radius scan_radius) contain that point.
+# def build_coverage_grid(
+#     scan_centers: np.ndarray,
+#     scan_radius: float,
+#     max_radius: float,
+#     grid_resolution: int = 1200,
+# ) -> tuple:
+#     """
+#     For every point on a fine 2D Cartesian grid, count how many scan circles
+#     (each of radius scan_radius) contain that point.
 
-    Returns:
-        xx, yy -- meshgrid arrays (grid_resolution × grid_resolution)
-        counts -- integer array of the same shape, NaN outside max_radius
-    """
+#     Returns:
+#         xx, yy -- meshgrid arrays (grid_resolution × grid_resolution)
+#         counts -- integer array of the same shape, NaN outside max_radius
+#     """
 
-    # Build a square grid that covers the search circle
+#     # Build a square grid that covers the search circle
+#     lin = np.linspace(-max_radius, max_radius, grid_resolution)
+#     xx, yy = np.meshgrid(lin, lin)
+
+#     # Mask out points outside the search circle
+#     inside = (xx ** 2 + yy ** 2) <= max_radius ** 2
+
+#     counts = np.zeros_like(xx, dtype=float)
+
+#     # For each scan center, add 1 to every grid cell within scan_radius
+#     # Vectorised: shape (M, G, G) would be too large for M big, so we batch
+#     # by chunking scan_centers if there are many.
+#     r2 = scan_radius ** 2
+#     chunk = 200  # process this many scan circles at once
+#     for start in range(0, len(scan_centers), chunk):
+#         batch = scan_centers[start : start + chunk] # (B, 2)
+#         # dx[b, i, j] = xx[i,j] - cx[b]
+#         dx = xx[None, :, :] - batch[:, 0, None, None] # (B, G, G)
+#         dy = yy[None, :, :] - batch[:, 1, None, None]
+#         dist2 = dx * dx + dy * dy # (B, G, G)
+#         counts += np.sum(dist2 <= r2, axis=0).astype(float)
+
+#     # Mask outside the search area with NaN so it renders as white
+#     counts[~inside] = np.nan
+
+#     return xx, yy, counts
+
+def build_coverage_grid(scan_centers, scan_radius, max_radius, grid_resolution=1200):
     lin = np.linspace(-max_radius, max_radius, grid_resolution)
     xx, yy = np.meshgrid(lin, lin)
-
-    # Mask out points outside the search circle
+    
     inside = (xx ** 2 + yy ** 2) <= max_radius ** 2
-
-    counts = np.zeros_like(xx, dtype=float)
-
-    # For each scan center, add 1 to every grid cell within scan_radius
-    # Vectorised: shape (M, G, G) would be too large for M big, so we batch
-    # by chunking scan_centers if there are many.
-    r2 = scan_radius ** 2
-    chunk = 200  # process this many scan circles at once
-    for start in range(0, len(scan_centers), chunk):
-        batch = scan_centers[start : start + chunk] # (B, 2)
-        # dx[b, i, j] = xx[i,j] - cx[b]
-        dx = xx[None, :, :] - batch[:, 0, None, None] # (B, G, G)
-        dy = yy[None, :, :] - batch[:, 1, None, None]
-        dist2 = dx * dx + dy * dy # (B, G, G)
-        counts += np.sum(dist2 <= r2, axis=0).astype(float)
-
-    # Mask outside the search area with NaN so it renders as white
+    
+    # Flatten grid points
+    grid_points = np.column_stack([xx.ravel(), yy.ravel()])
+    
+    # Build KD-tree from scan centers and query all grid points at once
+    tree = cKDTree(scan_centers)
+    counts_flat = tree.query_ball_point(grid_points, r=scan_radius, return_length=True)
+    
+    counts = counts_flat.reshape(xx.shape).astype(float)
     counts[~inside] = np.nan
-
+    
     return xx, yy, counts
-
 
 # ---------------------------------------------------------------------------
 # Main plot
@@ -140,13 +158,13 @@ def plot_coverage_heatmap(
     cmap = LinearSegmentedColormap.from_list(
         "coverage",
         [
-            (0.05, 0.05, 0.35), # deep navy -> 0 (gaps)
-            (0.00, 0.50, 0.80), # steel blue -> low
-            (0.00, 0.85, 0.85), # cyan
-            (0.20, 0.90, 0.20), # green
-            (1.00, 0.90, 0.00), # yellow
-            (1.00, 0.45, 0.00), # orange
-            (0.85, 0.00, 0.00), # red -> high overlap
+            (0.15, 0.00, 0.30), # deep purple -> 0 (gaps)
+            (0.00, 0.40, 0.75), # steel blue -> low
+            (0.00, 0.80, 0.80), # cyan
+            (0.15, 0.85, 0.15), # green
+            (1.00, 0.85, 0.00), # yellow
+            (1.00, 0.40, 0.00), # orange
+            (0.75, 0.00, 0.10), # deep crimson -> high overlap
         ],
     )
     cmap.set_bad(color="white") # NaN (outside of the circle) is white
@@ -185,7 +203,7 @@ def plot_coverage_heatmap(
         linestyle="--",
         linewidth=1.8,
         zorder=5,
-        label=f"Max search radius ({max_dist_rad:.2f})",
+        label=f"Max search radius ($R_{{\\mathrm{{max}}}}$={max_dist_rad:.2f})",
     )
     ax.add_patch(boundary)
 
@@ -207,17 +225,16 @@ def plot_coverage_heatmap(
         [params.X0], [params.Y0],
         s=80, c="white", marker="*",
         edgecolors="black", linewidths=0.8,
-        zorder=7, label="Origin",
+        zorder=7, label="Charging station",
     )
 
     # Target marker (only shown if within reachable area)
-    if np.hypot(params.XL - params.X0, params.YL - params.Y0) <= max_dist_rad * 1.5:
-        ax.scatter(
-            [params.XL], [params.YL],
-            s=120, c="purple", marker="o",
-            edgecolors="white", linewidths=0.8,
-            zorder=8, label="Target",
-        )
+    ax.scatter(
+        [params.XL], [params.YL],
+        s=120, c="purple", marker="o",
+        edgecolors="white", linewidths=0.8,
+        zorder=8, label="Target",
+    )
 
     ax.set_xlim(-max_dist_rad * 1.12, max_dist_rad * 1.12)
     ax.set_ylim(-max_dist_rad * 1.12, max_dist_rad * 1.12)
@@ -225,10 +242,9 @@ def plot_coverage_heatmap(
     ax.set_xlabel("x", fontsize=15)
     ax.set_ylabel("y", fontsize=15)
     ax.set_title(
-        "Coverage Density Heatmap: Angular Bisection\n"
-        f"(n={len(scan_centers)} scans, "
-        f"$r_{{\\mathrm{{scan}}}}$={params.R_SCAN}, "
-        f"$R_{{\\mathrm{{max}}}}$={max_dist_rad:.2f})",
+        "Radial Division Partial Coverage Density Heatmap\n"
+        f"$(r_{{\\mathrm{{scan}}}}$={params.R_SCAN}, "
+        f"$e_{{\\mathrm{{max}}}}$={params.E_MAX})",
         fontsize=17,
     )
     # Build legend manually so scan center marker can be bigger than on the plot
@@ -262,14 +278,13 @@ def main():
     params = Parameters(
         X0=0.0,
         Y0=0.0,
-        XL=999.9,
-        YL=999.9,
+        XL=-2,
+        YL=-1,
         R_SCAN=0.25,
-        T=1.0,
         M=1.0,
         EH=1.0,
         ES=0.3,
-        E_MAX=35.0,
+        E_MAX=20.0,
         DT=1e-3,
         EPS=5e-2,
         SOLVE_IVP_COUNTER=0,
@@ -278,7 +293,7 @@ def main():
 
     all_results = adaptive_model(
         params,
-        rad_search=params.R_SCAN*0.5, # change 0.5 value to change tolerance
+        rad_search=params.R_SCAN, # change 0.5 value to change tolerance
         max_dist_rad=None,
         point_list=None,
         max_arclength=None,
