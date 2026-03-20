@@ -43,7 +43,7 @@ def plot_trajectory_parametric(
     else:
         ax1.plot(x[: stopped_index + 1], y[: stopped_index + 1], lw=2.5, label="Forward")
 
-    ax1.scatter(x0, y0, c="green", s=80, label="Start", zorder=5)
+    ax1.scatter(x0, y0, c="green", s=80, label="Charging station", zorder=5)
     ax1.scatter(xT, yT, c="red", s=80, label="Target", zorder=5)
 
     ax1.set_xlabel("x",fontsize=14)
@@ -69,7 +69,7 @@ def plot_trajectory_parametric(
     # Right subplot (return path)
     ax2.plot(x[stopped_index:], y[stopped_index:], "--", lw=2.5, label="Return", color="tab:green")
     ax2.scatter(x[stopped_index],y[stopped_index],c="purple",s=100,marker="s",label="Stopped",zorder=5,)
-    ax2.scatter(x0, y0, c="green", s=80, label="Start", zorder=5)
+    ax2.scatter(x0, y0, c="green", s=80, label="Charging station", zorder=5)
 
     ax2.set_xlabel("x",fontsize=14)
     ax2.set_ylabel("y",fontsize=14)
